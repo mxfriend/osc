@@ -1,5 +1,4 @@
-import { OSCBundle } from '../dist';
-import { OSCMessage } from '../src';
+import { OSCMessage, OSCBundle } from '../src';
 import { decode, encodeMessage, encodeBundle } from '../src/utils';
 
 function nil(n: number): Buffer {
