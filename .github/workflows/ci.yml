@@ -14,10 +14,10 @@ jobs:
         uses: actions/checkout@master
       - name: Install dependencies
         run: npm ci
-      - name: Lint package
-        run: npm run lint
+      - name: Run tests
+        run: make tests
       - name: Build package
-        run: npm run build
+        run: make
       - name: Publish package to NPM
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
