@@ -13,15 +13,15 @@ export class OSCColorValue {
       this.b = b!;
       this.a = a!;
     } else {
-      this.r = (r >> 24) & 0xff;
-      this.g = (r >> 16) & 0xff;
-      this.b = (r >> 8) & 0xff;
-      this.a = r & 0xff;
+      this.r = ((r >>> 24) & 0xff) >>> 0;
+      this.g = ((r >>> 16) & 0xff) >>> 0;
+      this.b = ((r >>> 8) & 0xff) >>> 0;
+      this.a = (r & 0xff) >>> 0;
     }
   }
 
   valueOf(): number {
-    return (this.r & 0xff) << 24 | (this.g & 0xff) << 16 | (this.b & 0xff) << 8 | (this.a & 0xff);
+    return ((this.r & 0xff) << 24 | (this.g & 0xff) << 16 | (this.b & 0xff) << 8 | (this.a & 0xff)) >>> 0;
   }
 }
 
@@ -40,14 +40,14 @@ export class OSCMIDIValue {
       this.data1 = data1;
       this.data2 = data2;
     } else {
-      this.port = (port >> 24) & 0xff;
-      this.status = (port >> 16) & 0xff;
-      this.data1 = (port >> 8) & 0xff;
-      this.data2 = port & 0xff;
+      this.port = ((port >>> 24) & 0xff) >>> 0;
+      this.status = ((port >>> 16) & 0xff) >>> 0;
+      this.data1 = ((port >>> 8) & 0xff) >>> 0;
+      this.data2 = (port & 0xff) >>> 0;
     }
   }
 
   valueOf(): number {
-    return (this.port & 0xff) << 24 | (this.status & 0xff) << 16 | (this.data1 & 0xff) << 8 | (this.data2 & 0xff);
+    return ((this.port & 0xff) << 24 | (this.status & 0xff) << 16 | (this.data1 & 0xff) << 8 | (this.data2 & 0xff)) >>> 0;
   }
 }

@@ -189,7 +189,7 @@ function writechar(value: string): Buffer {
 
 function writeuint(value: number): Buffer {
   const buf = Buffer.alloc(4);
-  buf.writeUint32BE(value);
+  buf.writeUint32BE(value >>> 0);
   return buf;
 }
 

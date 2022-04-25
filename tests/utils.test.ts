@@ -1,28 +1,25 @@
 import { OSCMessage, OSCBundle } from '../src';
 import { decode, encodeMessage, encodeBundle } from '../src/utils';
-
-function nil(n: number): Buffer {
-  return Buffer.alloc(n);
-}
-
-function buf(...items: (number | string | Buffer)[]): Buffer {
-  return Buffer.concat(items.map((item) => {
-    switch (typeof item) {
-      case 'string': return Buffer.from(item);
-      case 'number': return Buffer.of(item);
-      default: return item;
-    }
-  }));
-}
+import { buf, int32, nil } from './test-helpers';
 
 const messages: [Buffer, OSCMessage][] = [
   [buf('/foo/ba', 0), { address: '/foo/ba', args: [] }],
   [buf('/foo/bar', nil(4)), { address: '/foo/bar', args: [] }],
-  [buf('/test', nil(3), ',i', nil(2), 0x01, 0x02, 0x03, 0x04), { address: '/test', args: [ { type: 'i', value: 0x01020304 } ] }],
+  [buf('/test', nil(3), ',i', nil(2), int32(0x01020304)), { address: '/test', args: [ { type: 'i', value: 0x01020304 } ] }],
 ];
 
 const bundles: [Buffer, OSCBundle][] = [
-  [buf('#bundle', 0, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78), { elements: [], timetag: BigInt('0x1234567812345678') }]
+  [buf('#bundle', 0, BigInt('0x1234567812345678')), { elements: [], timetag: BigInt('0x1234567812345678') }],
+  [
+    buf(
+      '#bundle', 0, BigInt('0x1234567812345678'),
+      ...messages.flatMap(([b]) => [int32(b.byteLength), b]),
+    ),
+    {
+      elements: messages.map(([, m]) => m),
+      timetag: BigInt('0x1234567812345678'),
+    },
+  ],
 ];
 
 test('decode() OSC messages', () => {
