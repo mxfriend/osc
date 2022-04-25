@@ -1,5 +1,4 @@
-import { OSCColorValue, OSCMIDIValue } from '../../dist';
-import { OSCMessage } from '../../src';
+import { OSCColorValue, OSCMIDIValue, OSCMessage } from '../../src';
 import { buf, uint32 } from '../test-helpers';
 
 export const messages: [Buffer, OSCMessage][] = [
