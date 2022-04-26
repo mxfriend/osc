@@ -1,4 +1,4 @@
-import { OSCArgument, OSCArray, OSCBundle, OSCMessage, isMessage } from './types';
+import { OSCArgument, OSCArray, OSCBundle, OSCMessage, OSCBundleElement, isMessage } from './types';
 import { OSCColorValue, OSCMIDIValue } from './values';
 
 const BUNDLE_TAG = '#bundle';
@@ -235,27 +235,29 @@ function nonempty<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;
 }
 
-export function encodeMessage(message: OSCMessage): Buffer {
-  if (!message.args.length) {
-    return writestr(message.address);
+export function encodeMessage(address: string, args?: OSCArgument[]): Buffer {
+  if (!args || !args.length) {
+    return writestr(address);
   }
 
   return Buffer.concat([
-    writestr(message.address),
-    writestr(',' + message.args.map(writetype).join('')),
-    ...message.args.map(writearg).filter(nonempty),
+    writestr(address),
+    writestr(',' + args.map(writetype).join('')),
+    ...args.map(writearg).filter(nonempty),
   ]);
 }
 
-function encodeBundleElement(element: OSCMessage | OSCBundle): Buffer[] {
-  const data = isMessage(element) ? encodeMessage(element) : encodeBundle(element);
+function encodeBundleElement(element: OSCBundleElement): Buffer[] {
+  const data = isMessage(element)
+    ? encodeMessage(element.address, element.args)
+    : encodeBundle(element.elements, element.timetag);
   return [writeint(data.byteLength), data];
 }
 
-export function encodeBundle(bundle: OSCBundle): Buffer {
+export function encodeBundle(elements: OSCBundleElement[], timetag?: bigint): Buffer {
   return Buffer.concat([
     writestr(BUNDLE_TAG),
-    writebigint(bundle.timetag),
-    ...bundle.elements.flatMap(encodeBundleElement),
+    writebigint(timetag ?? 1n),
+    ...elements.flatMap(encodeBundleElement),
   ]);
 }

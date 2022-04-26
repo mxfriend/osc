@@ -40,14 +40,14 @@ test('decode() OSC bundles', () => {
 
 test('encodeMessage()', () => {
   for (const [packet, message] of messages) {
-    const encoded = encodeMessage(message);
+    const encoded = encodeMessage(message.address, message.args);
     expect(encoded.equals(packet)).toBe(true);
   }
 });
 
 test('encodeBundle()', () => {
   for (const [packet, bundle] of bundles) {
-    const encoded = encodeBundle(bundle);
+    const encoded = encodeBundle(bundle.elements, bundle.timetag);
     expect(encoded.equals(packet)).toBe(true);
   }
 });

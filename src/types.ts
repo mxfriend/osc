@@ -99,15 +99,17 @@ export type OSCMessage = {
 };
 
 export type OSCBundle = {
-  elements: (OSCMessage | OSCBundle)[];
+  elements: OSCBundleElement[];
   timetag: bigint;
 };
 
-export function isMessage(value: OSCMessage | OSCBundle): value is OSCMessage {
+export type OSCBundleElement = OSCMessage | OSCBundle;
+
+export function isMessage(value: OSCBundleElement): value is OSCMessage {
   return value && typeof (value as any).address === 'string';
 }
 
-export function isBundle(value: OSCMessage | OSCBundle): value is OSCBundle {
+export function isBundle(value: OSCBundleElement): value is OSCBundle {
   return value && Array.isArray((value as any).elements);
 }
 

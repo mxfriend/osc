@@ -11,7 +11,7 @@ test('decode OSC arguments', () => {
 
 test('encode OSC arguments', () => {
   for (const [packet, message] of messages) {
-    const encoded = encodeMessage(message);
+    const encoded = encodeMessage(message.address, message.args);
     expect(encoded.equals(packet)).toBe(true);
   }
 });
