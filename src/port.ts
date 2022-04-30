@@ -46,6 +46,15 @@ export class OSCPort extends EventEmitter {
     this.sock.on('message', this.handlePacket);
   }
 
+  async close(): Promise<void> {
+    this.sock.removeAllListeners();
+    this.removeAllListeners();
+
+    await new Promise<void>((resolve) => {
+      this.sock.close(resolve)
+    });
+  }
+
   async send(address: string, args?: OSCArgument[], peer?: OSCPeer): Promise<void> {
     await this.sendPacket(encodeMessage(address, args), peer);
   }
