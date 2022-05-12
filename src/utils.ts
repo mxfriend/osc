@@ -237,7 +237,10 @@ function nonempty<T>(value: T | undefined | null): value is T {
 
 export function encodeMessage(address: string, args?: OSCArgument[]): Buffer {
   if (!args || !args.length) {
-    return writestr(address);
+    return Buffer.concat([
+      writestr(address),
+      writestr(','),
+    ]);
   }
 
   return Buffer.concat([
