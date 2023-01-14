@@ -40,7 +40,7 @@ const osc = new UdpOSCPort({
 // binds the UDP port & sets up internal event listeners
 await osc.open();
 
-// subscribe to incoming OSC messages
+// subscribe to all incoming OSC messages
 osc.on('message', (message: OSCMessage) => {
   console.log(message.address, message.args);
 });
@@ -51,6 +51,18 @@ osc.on('message', (message: OSCMessage) => {
 // the bundle contains
 osc.on('bundle', (bundle: OSCBundle) => {
   console.log(bundle.timetag, bundle.elements);
+});
+
+// as an alternative you can subscribe directly to addresses
+// or address patterns; this may be more performant if you get
+// lots of messages, but only care about some of them, and you
+// know the addresses in advance.
+//
+// note that if you do this, bundle events will never be emitted,
+// as bundles will only be scanned for subscribed messages, never
+// fully decoded.
+osc.subscribe('/some/address/pattern/*', (message: OSCMessage) => {
+  console.log(message.address.startsWith('/some/address/pattern/') === true);
 });
 
 // send OSC messages

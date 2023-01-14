@@ -1,7 +1,9 @@
+import { OSCDecoder } from './decoder';
+import { OSCEncoder } from './encoder';
 import { OSCArgument, OSCBundleElement, isBundle, OSCMessage } from './types';
-import { encodeMessage, encodeBundle, decodePacket } from './utils';
 
 export type EventHandler = (...args: any) => void;
+export type SubscriptionHandler<TSrcPeer = unknown> = (message: OSCMessage, peer?: TSrcPeer) => void;
 
 export type EventMap = {
   [event: string]: EventHandler;
@@ -13,20 +15,25 @@ export type CommonEvents<TSrcPeer = unknown> = {
 }
 
 export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, TEvents extends EventMap = CommonEvents<TSrcPeer>> {
+  private readonly encoder: OSCEncoder = new OSCEncoder();
+  private readonly decoder: OSCDecoder = new OSCDecoder();
   private readonly events: Map<string, Set<EventHandler>> = new Map();
+  private readonly subscribers: Map<string, Set<SubscriptionHandler<TSrcPeer>>> = new Map();
 
   protected abstract sendPacket(packet: Buffer, to?: TDstPeer): Promise<void> | void;
 
   protected receive(packet: Buffer, from?: TSrcPeer): void {
-    this.emitEvents(decodePacket(packet), from);
+    for (const element of this.decoder.decodePacket(packet)) {
+      this.emitOSCElement(element, from);
+    }
   }
 
   public async send(address: string, args?: OSCArgument[], to?: TDstPeer): Promise<void> {
-    await this.sendPacket(encodeMessage(address, args), to);
+    await this.sendPacket(this.encoder.encodeMessage(address, args), to);
   }
 
   public async sendBundle(elements: OSCBundleElement[], timetag?: bigint, to?: TDstPeer): Promise<void> {
-    await this.sendPacket(encodeBundle(elements, timetag), to);
+    await this.sendPacket(this.encoder.encodeBundle(elements, timetag), to);
   }
 
   public on<Event extends keyof TEvents>(event: Event, handler: TEvents[Event]): void;
@@ -59,14 +66,52 @@ export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, T
     }
   }
 
-  private emitEvents(element: OSCBundleElement, from?: TSrcPeer): void {
+  public subscribe(address: string, handler: SubscriptionHandler<TSrcPeer>): void {
+    if (!this.subscribers.has(address)) {
+      this.subscribers.set(address, new Set());
+      this.decoder.addKnownAddress(address);
+    }
+
+    this.subscribers.get(address)!.add(handler);
+  }
+
+  public unsubscribe(address?: string, handler?: SubscriptionHandler<TSrcPeer>): void {
+    if (!address) {
+      this.subscribers.clear();
+      this.decoder.removeAllKnownAddresses();
+    } else if (!handler) {
+      this.subscribers.delete(address);
+      this.decoder.removeKnownAddress(address);
+    } else {
+      const handlers = this.subscribers.get(address);
+
+      if (handlers) {
+        handlers.delete(handler);
+      }
+
+      if (!handlers || handlers.size < 1) {
+        this.subscribers.delete(address);
+        this.decoder.removeKnownAddress(address);
+      }
+    }
+  }
+
+  private emitOSCElement(element: OSCBundleElement, from?: TSrcPeer): void {
     if (isBundle(element)) {
       if (!this.emit('bundle', element, from)) {
         for (const child of element.elements) {
-          this.emitEvents(child, from);
+          this.emitOSCElement(child, from);
         }
       }
     } else {
+      const subscribers = this.subscribers.get(element.address);
+
+      if (subscribers) {
+        for (const handler of subscribers) {
+          handler(element, from);
+        }
+      }
+
       this.emit('message', element, from);
     }
   }
