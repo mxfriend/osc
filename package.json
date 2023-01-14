@@ -19,9 +19,17 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./udp": {
+      "types": "./dist/udpPort.d.ts",
       "node": "./dist/udpPort.js"
+    },
+    "./ws": {
+      "types": "./dist/websocketPort.d.ts",
+      "node": "./dist/websocketPort.js"
     }
   },
   "files": [

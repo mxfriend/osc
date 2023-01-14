@@ -8,8 +8,8 @@ export type EventMap = {
 };
 
 export type CommonEvents<TSrcPeer = unknown> = {
-  message: (event: 'message', message: OSCMessage, peer: TSrcPeer) => void;
-  bundle: (event: 'bundle', message: OSCMessage, peer: TSrcPeer) => void;
+  message: (event: 'message', message: OSCMessage, peer?: TSrcPeer) => void;
+  bundle: (event: 'bundle', message: OSCMessage, peer?: TSrcPeer) => void;
 }
 
 export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, TEvents extends EventMap = CommonEvents<TSrcPeer>> {
@@ -17,7 +17,7 @@ export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, T
 
   protected abstract sendPacket(packet: Buffer, to?: TDstPeer): Promise<void> | void;
 
-  protected receive(packet: Buffer, from: TSrcPeer): void {
+  protected receive(packet: Buffer, from?: TSrcPeer): void {
     this.emitEvents(decodePacket(packet), from);
   }
 
@@ -59,7 +59,7 @@ export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, T
     }
   }
 
-  private emitEvents(element: OSCBundleElement, from: TSrcPeer): void {
+  private emitEvents(element: OSCBundleElement, from?: TSrcPeer): void {
     if (isBundle(element)) {
       if (!this.emit('bundle', element, from)) {
         for (const child of element.elements) {
