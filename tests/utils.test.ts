@@ -1,5 +1,4 @@
-import { OSCMessage, OSCBundle } from '../src';
-import { decode, encodeMessage, encodeBundle } from '../src/utils';
+import { OSCMessage, OSCBundle, decodePacket, encodeMessage, encodeBundle } from '../src';
 import { buf, int32, nil } from './test-helpers';
 
 const messages: [Buffer, OSCMessage][] = [
@@ -22,19 +21,15 @@ const bundles: [Buffer, OSCBundle][] = [
   ],
 ];
 
-test('decode() OSC messages', () => {
+test('decodePacket() with OSC messages', () => {
   for (const [packet, message] of messages) {
-    const [type, decoded] = decode(packet);
-    expect(type).toBe('message');
-    expect(decoded).toEqual(message);
+    expect(decodePacket(packet)).toEqualCustom(message);
   }
 });
 
-test('decode() OSC bundles', () => {
+test('decodePacket() with OSC bundles', () => {
   for (const [packet, bundle] of bundles) {
-    const [type, decoded] = decode(packet);
-    expect(type).toBe('bundle');
-    expect(decoded).toEqual(bundle);
+    expect(decodePacket(packet)).toEqualCustom(bundle);
   }
 });
 

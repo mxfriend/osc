@@ -6,9 +6,9 @@ and timetag), as well as all the other non-standard types listed in the OSC 1.0
 specification (bigint, double, symbol, char, RGBA color, MIDI message and arrays)
 are supported, as are OSC bundles.
 
-The only supported transport layer is UDP, which means the only supported runtime
-environment is NodeJS. If you need support for other transport layers such as TCP
-or WebSockets, feel free to send a PR.
+The package provides an abstract "OSC Port" implementation, which has no dependencies
+and needs to be extended to provide a suitable transport layer. In NodeJS and compatible
+environments there is a UDP OSC Port implementation available under a sub-path export.
 
 ## Installation
 
@@ -21,13 +21,15 @@ npm install --save @mxfriend/osc
 First you need to create an OSC Port. An OSC Port can both send and receive OSC
 messages, so there's no separate client and server implementation.
 
-The options object, as well as all of its properties, is optional; default values
-and option descriptions are shown in the following example:
+This example uses the built-in UDP OSC Port implementation. The options object,
+as well as all of its properties, is optional; default values and option descriptions
+are shown in the following example:
 
 ```typescript
-import { OSCBundle, OSCMessage, OSCPort } from '@mxfriend/osc';
+import { OSCBundle, OSCMessage } from '@mxfriend/osc';
+import { UdpOSCPort } from '@mxfriend/osc/udp';
 
-const osc = new OSCPort({
+const osc = new UdpOSCPort({
   localAddress: '0.0.0.0',  // the local IP the UDP socket should bind to; the default means all
   localPort: 0,             // the local port the UDP socket should bind to; 0 means random
   remoteAddress: undefined, // the default IP to send OSC messages to
@@ -43,7 +45,10 @@ osc.on('message', (message: OSCMessage) => {
   console.log(message.address, message.args);
 });
 
-// subscribe to incoming OSC bundles
+// subscribe to incoming OSC bundles; if this event isn't handled
+// explicitly, the OSC port will iterate over the bundle elements
+// recursively and emit a `message` event for each `OSCMessage`
+// the bundle contains
 osc.on('bundle', (bundle: OSCBundle) => {
   console.log(bundle.timetag, bundle.elements);
 });

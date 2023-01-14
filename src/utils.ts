@@ -25,14 +25,14 @@ function scanblob(packet: Buffer, cursor: Cursor): Buffer {
   return buf;
 }
 
-export function decode(packet: Buffer): ['bundle', OSCBundle] | ['message', OSCMessage] {
+export function decodePacket(packet: Buffer): OSCBundleElement {
   const cursor: Cursor = { index: 0 };
   const address: string = scanstr(packet, cursor);
 
   if (address === BUNDLE_TAG) {
-    return ['bundle', decodeBundle(packet, cursor)];
+    return decodeBundle(packet, cursor);
   } else {
-    return ['message', decodeMessage(packet, address, cursor)];
+    return decodeMessage(packet, address, cursor);
   }
 }
 
@@ -42,8 +42,7 @@ function decodeBundle(packet: Buffer, cursor: Cursor): OSCBundle {
   cursor.index += 8;
 
   while (cursor.index < packet.byteLength) {
-    const [, element] = decode(scanblob(packet, cursor));
-    elements.push(element);
+    elements.push(decodePacket(scanblob(packet, cursor)));
   }
 
   return { elements, timetag };

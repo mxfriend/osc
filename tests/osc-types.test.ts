@@ -1,11 +1,9 @@
-import { decode, encodeMessage } from '../src/utils';
+import { decodePacket, encodeMessage } from '../src';
 import { messages } from './types';
 
 test('decode OSC arguments', () => {
   for (const [packet, message] of messages) {
-    const [type, decoded] = decode(packet);
-    expect(type).toBe('message');
-    expect(decoded).toEqualCustom(message);
+    expect(decodePacket(packet)).toEqualCustom(message);
   }
 });
 
