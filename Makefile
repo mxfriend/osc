@@ -15,5 +15,8 @@ clean:
 tests:
 	jest
 
+.PHONY: all
+all: rebuild tests
+
 dist:
 	tsc

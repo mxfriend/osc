@@ -1,38 +1,38 @@
 import { OSCDecoder } from './decoder';
 import { OSCEncoder } from './encoder';
-import { OSCArgument, OSCBundleElement, isBundle, OSCMessage } from './types';
+import { OSCArgument, OSCBundleElement, OSCMessage, isBundle } from './types';
 
 export type EventHandler = (...args: any) => void;
-export type SubscriptionHandler<TSrcPeer = unknown> = (message: OSCMessage, peer?: TSrcPeer) => void;
+export type SubscriptionHandler<TPeer = unknown> = (message: OSCMessage, peer?: TPeer) => void;
 
 export type EventMap = {
   [event: string]: EventHandler;
 };
 
-export type CommonEvents<TSrcPeer = unknown> = {
-  message: (event: 'message', message: OSCMessage, peer?: TSrcPeer) => void;
-  bundle: (event: 'bundle', message: OSCMessage, peer?: TSrcPeer) => void;
+export type CommonEvents<TPeer = unknown> = {
+  message: (event: 'message', message: OSCMessage, peer?: TPeer) => void;
+  bundle: (event: 'bundle', message: OSCMessage, peer?: TPeer) => void;
 }
 
-export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, TEvents extends EventMap = CommonEvents<TSrcPeer>> {
+export abstract class AbstractOSCPort<TPeer = unknown, TEvents extends EventMap = CommonEvents<TPeer>> {
   private readonly encoder: OSCEncoder = new OSCEncoder();
   private readonly decoder: OSCDecoder = new OSCDecoder();
   private readonly events: Map<string, Set<EventHandler>> = new Map();
-  private readonly subscribers: Map<string, Set<SubscriptionHandler<TSrcPeer>>> = new Map();
+  private readonly subscribers: Map<string, Set<SubscriptionHandler<TPeer>>> = new Map();
 
-  protected abstract sendPacket(packet: Buffer, to?: TDstPeer): Promise<void> | void;
+  protected abstract sendPacket(packet: Buffer, to?: TPeer): Promise<void> | void;
 
-  protected receive(packet: Buffer, from?: TSrcPeer): void {
+  protected receive(packet: Buffer, from?: TPeer): void {
     for (const element of this.decoder.decodePacket(packet)) {
       this.emitOSCElement(element, from);
     }
   }
 
-  public async send(address: string, args?: OSCArgument[], to?: TDstPeer): Promise<void> {
+  public async send(address: string, args?: OSCArgument[], to?: TPeer): Promise<void> {
     await this.sendPacket(this.encoder.encodeMessage(address, args), to);
   }
 
-  public async sendBundle(elements: OSCBundleElement[], timetag?: bigint, to?: TDstPeer): Promise<void> {
+  public async sendBundle(elements: OSCBundleElement[], timetag?: bigint, to?: TPeer): Promise<void> {
     await this.sendPacket(this.encoder.encodeBundle(elements, timetag), to);
   }
 
@@ -66,7 +66,7 @@ export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, T
     }
   }
 
-  public subscribe(address: string, handler: SubscriptionHandler<TSrcPeer>): void {
+  public subscribe(address: string, handler: SubscriptionHandler<TPeer>): void {
     if (!this.subscribers.has(address)) {
       this.subscribers.set(address, new Set());
       this.decoder.addKnownAddress(address);
@@ -75,7 +75,7 @@ export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, T
     this.subscribers.get(address)!.add(handler);
   }
 
-  public unsubscribe(address?: string, handler?: SubscriptionHandler<TSrcPeer>): void {
+  public unsubscribe(address?: string, handler?: SubscriptionHandler<TPeer>): void {
     if (!address) {
       this.subscribers.clear();
       this.decoder.removeAllKnownAddresses();
@@ -96,7 +96,7 @@ export abstract class AbstractOSCPort<TDstPeer = unknown, TSrcPeer = TDstPeer, T
     }
   }
 
-  private emitOSCElement(element: OSCBundleElement, from?: TSrcPeer): void {
+  private emitOSCElement(element: OSCBundleElement, from?: TPeer): void {
     if (isBundle(element)) {
       if (!this.emit('bundle', element, from)) {
         for (const child of element.elements) {

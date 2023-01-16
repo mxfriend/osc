@@ -12,7 +12,7 @@ type WebsocketEvents = CommonEvents<never> & {
   error: (event: 'error', error: Event) => void;
 };
 
-export class WebsocketPort extends AbstractOSCPort<never, never, WebsocketEvents> {
+export class WebsocketPort extends AbstractOSCPort<never, WebsocketEvents> {
   private readonly url: string;
   private sock?: Promise<WebSocket>;
 

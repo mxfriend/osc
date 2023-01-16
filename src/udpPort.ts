@@ -18,7 +18,7 @@ type UdpEvents = CommonEvents<UdpOSCPeer> & {
   error: (event: 'error', error: any) => void;
 };
 
-export class UdpOSCPort extends AbstractOSCPort<UdpOSCPeer, UdpOSCPeer, UdpEvents> {
+export class UdpOSCPort extends AbstractOSCPort<UdpOSCPeer, UdpEvents> {
   private readonly options: UdpOSCPortOptions;
   private readonly sock: Socket;
 
