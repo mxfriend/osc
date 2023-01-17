@@ -1,23 +1,21 @@
 import { OSCDecoder } from './decoder';
 import { OSCEncoder } from './encoder';
+import { EventEmitter, EventMap } from './eventEmitter';
 import { OSCArgument, OSCBundleElement, OSCMessage, isBundle } from './types';
 
-export type EventHandler = (...args: any) => void;
 export type SubscriptionHandler<TPeer = unknown> = (message: OSCMessage, peer?: TPeer) => void;
-
-export type EventMap = {
-  [event: string]: EventHandler;
-};
 
 export type CommonEvents<TPeer = unknown> = {
   message: (event: 'message', message: OSCMessage, peer?: TPeer) => void;
   bundle: (event: 'bundle', message: OSCMessage, peer?: TPeer) => void;
 }
 
-export abstract class AbstractOSCPort<TPeer = unknown, TEvents extends EventMap = CommonEvents<TPeer>> {
+export abstract class AbstractOSCPort<
+  TPeer = unknown,
+  TEvents extends EventMap = CommonEvents<TPeer>
+> extends EventEmitter<TEvents> {
   private readonly encoder: OSCEncoder = new OSCEncoder();
   private readonly decoder: OSCDecoder = new OSCDecoder();
-  private readonly events: Map<string, Set<EventHandler>> = new Map();
   private readonly subscribers: Map<string, Set<SubscriptionHandler<TPeer>>> = new Map();
 
   protected abstract sendPacket(packet: Buffer, to?: TPeer): Promise<void> | void;
@@ -34,36 +32,6 @@ export abstract class AbstractOSCPort<TPeer = unknown, TEvents extends EventMap 
 
   public async sendBundle(elements: OSCBundleElement[], timetag?: bigint, to?: TPeer): Promise<void> {
     await this.sendPacket(this.encoder.encodeBundle(elements, timetag), to);
-  }
-
-  public on<Event extends keyof TEvents>(event: Event, handler: TEvents[Event]): void;
-  public on(event: string, handler: EventHandler): void;
-  public on(event: string, handler: EventHandler): void {
-    this.events.has(event) || this.events.set(event, new Set());
-    this.events.get(event)!.add(handler);
-  }
-
-  public once<Event extends keyof TEvents>(event: Event, handler: TEvents[Event]): void;
-  public once(event: string, handler: EventHandler): void;
-  public once(event: string, handler: EventHandler): void {
-    const wrapper: EventHandler = (...args) => {
-      this.off(event, wrapper);
-      handler(...args);
-    };
-
-    this.on(event, wrapper);
-  }
-
-  public off<Event extends keyof TEvents>(event?: Event, handler?: TEvents[Event]): void;
-  public off(event?: string, handler?: EventHandler): void;
-  public off(event?: string, handler?: EventHandler): void {
-    if (!event) {
-      this.events.clear();
-    } else if (!handler) {
-      this.events.delete(event);
-    } else {
-      this.events.get(event)?.delete(handler);
-    }
   }
 
   public subscribe(address: string, handler: SubscriptionHandler<TPeer>): void {
@@ -114,19 +82,5 @@ export abstract class AbstractOSCPort<TPeer = unknown, TEvents extends EventMap 
 
       this.emit('message', element, from);
     }
-  }
-
-  protected emit(event: string, ...args: any[]): boolean {
-    const listeners = this.events.get(event);
-
-    if (!listeners) {
-      return false;
-    }
-
-    for (const listener of listeners) {
-      listener(event, ...args);
-    }
-
-    return true;
   }
 }
