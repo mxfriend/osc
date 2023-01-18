@@ -1,4 +1,4 @@
-import { AbstractOSCPort, CommonEvents } from './abstractPort';
+import { AbstractOSCPort } from './abstractPort';
 
 if (typeof Buffer === 'undefined') {
   console.error(
@@ -8,8 +8,8 @@ if (typeof Buffer === 'undefined') {
   );
 }
 
-type WebsocketEvents = CommonEvents<never> & {
-  error: (event: 'error', error: Event) => void;
+type WebsocketEvents = {
+  error: (error: Event) => void;
 };
 
 export class WebsocketPort extends AbstractOSCPort<never, WebsocketEvents> {

@@ -1,5 +1,5 @@
 import { Socket, RemoteInfo, createSocket } from 'dgram';
-import { AbstractOSCPort, CommonEvents } from './abstractPort';
+import { AbstractOSCPort } from './abstractPort';
 
 export type UdpOSCPortOptions = {
   localAddress?: string;
@@ -14,8 +14,8 @@ export type UdpOSCPeer = {
   port: number;
 };
 
-type UdpEvents = CommonEvents<UdpOSCPeer> & {
-  error: (event: 'error', error: any) => void;
+type UdpEvents = {
+  error: (error: any) => void;
 };
 
 export class UdpOSCPort extends AbstractOSCPort<UdpOSCPeer, UdpEvents> {
@@ -26,7 +26,6 @@ export class UdpOSCPort extends AbstractOSCPort<UdpOSCPeer, UdpEvents> {
     super();
     this.options = options;
     this.sock = createSocket('udp4');
-
     this.handlePacket = this.handlePacket.bind(this);
   }
 
