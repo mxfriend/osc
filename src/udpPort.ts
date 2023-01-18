@@ -21,15 +21,23 @@ type UdpEvents = {
 export class UdpOSCPort extends AbstractOSCPort<UdpOSCPeer, UdpEvents> {
   private readonly options: UdpOSCPortOptions;
   private readonly sock: Socket;
+  private opened: boolean;
 
   constructor(options: UdpOSCPortOptions = {}) {
     super();
     this.options = options;
     this.sock = createSocket('udp4');
+    this.opened = false;
     this.handlePacket = this.handlePacket.bind(this);
   }
 
   async open(): Promise<void> {
+    if (this.opened) {
+      throw new Error('Port is already opened');
+    }
+
+    this.opened = true;
+
     await new Promise<void>((resolve, reject) => {
       this.sock.once('error', reject);
 
@@ -51,12 +59,20 @@ export class UdpOSCPort extends AbstractOSCPort<UdpOSCPeer, UdpEvents> {
     this.sock.removeAllListeners();
     this.off();
 
+    if (!this.opened) {
+      return;
+    }
+
     await new Promise<void>((resolve) => {
       this.sock.close(resolve)
     });
   }
 
   protected async sendPacket(packet: Buffer, to?: UdpOSCPeer): Promise<void> {
+    if (!this.opened) {
+      throw new Error('Socket is not opened, call socket.open() first');
+    }
+
     await new Promise<void>((resolve, reject) => {
       this.sock.send(packet, to?.port ?? this.options.remotePort, to?.ip ?? this.options.remoteAddress, (err) => {
         if (err) {
