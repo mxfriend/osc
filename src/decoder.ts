@@ -5,36 +5,20 @@ import { OSCColorValue, OSCMIDIValue } from './values';
 
 export class OSCDecoder {
   private readonly knownAddresses: Set<string> = new Set();
-  private readonly knownAddressPatterns: Map<string, RegExp> = new Map();
   private checkKnown: boolean = false;
 
   public addKnownAddress(address: string): void {
-    for (const [addr, pattern] of parseKnownAddress(address)) {
-      if (pattern) {
-        this.knownAddressPatterns.set(addr, pattern);
-      } else {
-        this.knownAddresses.add(addr);
-      }
-    }
-
+    this.knownAddresses.add(address);
     this.checkKnown = true;
   }
 
   public removeKnownAddress(address: string): void {
-    for (const [addr, pattern] of parseKnownAddress(address, false)) {
-      if (pattern) {
-        this.knownAddressPatterns.delete(addr);
-      } else {
-        this.knownAddresses.delete(addr);
-      }
-    }
-
-    this.checkKnown = this.knownAddresses.size > 0 || this.knownAddressPatterns.size > 0;
+    this.knownAddresses.delete(address);
+    this.checkKnown = this.knownAddresses.size > 0;
   }
 
   public removeAllKnownAddresses(): void {
     this.knownAddresses.clear();
-    this.knownAddressPatterns.clear();
     this.checkKnown = false;
   }
 
@@ -45,7 +29,7 @@ export class OSCDecoder {
     if (!full && this.checkKnown) {
       if (address === BUNDLE_TAG) {
         yield * this.scanBundle(packet, cursor);
-      } else if (this.isKnownAddress(address)) {
+      } else if (this.knownAddresses.has(address)) {
         yield this.decodeMessage(packet, address, cursor);
       }
     } else if (address === BUNDLE_TAG) {
@@ -179,58 +163,4 @@ export class OSCDecoder {
     cursor.inc(length);
     return buf;
   }
-
-  private isKnownAddress(address: string): boolean {
-    if (this.knownAddresses.has(address)) {
-      return true;
-    }
-
-    for (const pattern of this.knownAddressPatterns.values()) {
-      if (pattern.test(address)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-}
-
-function parseKnownAddress(address: string, withRE: false): IterableIterator<[string, boolean]>;
-function parseKnownAddress(address: string, withRE?: true): IterableIterator<[string, RegExp | false]>;
-function * parseKnownAddress(address: string, withRE: boolean = true): IterableIterator<[string, RegExp | boolean]> {
-  const match = address.match(/^([^?*[\]{}]*){([^?*[\]{}]+)}([^?*[\]{}]*)$/);
-
-  if (match) {
-    const tokens = match[2].split(/,/g);
-
-    for (const token of tokens) {
-      for (const [addr] of parseKnownAddress(match[3], false)) {
-        yield [match[1] + token + addr, false];
-      }
-    }
-  } else if (/[?*[\]{}]/.test(address)) {
-    if (!withRE) {
-      yield [address, true];
-    } else {
-      const pattern = escapePattern(address).replace(/(\\\?)|(\\\*)|\\\[([^\]]+)\\]|\\{([^}]+)\\}/g, (_, q, a, ch, tok) => {
-        if (q) {
-          return '.';
-        } else if (a) {
-          return '.*';
-        } else if (ch) {
-          return `[${ch.replace(/\\-/g, '-').replace(/^!/, '^')}]`;
-        } else {
-          return `(?:${tok.replace(/,/g, '|')})`;
-        }
-      });
-
-      yield [address, new RegExp(pattern)];
-    }
-  } else {
-    yield [address, false];
-  }
-}
-
-function escapePattern(pattern: string): string {
-  return pattern.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }

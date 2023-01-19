@@ -42,7 +42,7 @@ export class WebsocketOSCPort extends AbstractOSCPort<WebSocket, WebsocketEvents
             message: this.handleMessage,
             close: this.handleClose,
             error: this.handleError,
-          });
+          }, ['message']);
           resolve(sock);
         },
         error: reject,
@@ -69,8 +69,8 @@ type ListenerMap = {
   [Event in keyof WebSocketEventMap]?: (evt: WebSocketEventMap[Event]) => void;
 };
 
-function attachListeners(ws: WebSocket, events: ListenerMap): void;
-function attachListeners(ws: WebSocket, events: Record<string, (...args: any[]) => void>): void {
+function attachListeners(ws: WebSocket, events: ListenerMap, ignored?: (keyof ListenerMap)[]): void;
+function attachListeners(ws: WebSocket, events: Record<string, (...args: any[]) => void>, ignored: string[] = []): void {
   const cleanup = () => {
     for (const [event, listener] of Object.entries(events)) {
       ws.removeEventListener(event, listener);
@@ -78,9 +78,13 @@ function attachListeners(ws: WebSocket, events: Record<string, (...args: any[]) 
   };
 
   for (const [event, listener] of Object.entries(events)) {
-    ws.addEventListener(event, events[event] = (...args: any[]) => {
-      cleanup();
-      listener(...args);
-    });
+    if (ignored.includes(event)) {
+      ws.addEventListener(event, events[event] = listener);
+    } else {
+      ws.addEventListener(event, events[event] = (...args: any[]) => {
+        cleanup();
+        listener(...args);
+      });
+    }
   }
 }
