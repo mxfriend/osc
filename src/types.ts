@@ -17,7 +17,7 @@ export type OSCString = {
 
 export type OSCBlob = {
   type: 'b';
-  value: Buffer;
+  value: Uint8Array;
 };
 
 export type OSCBigInt = {
@@ -135,6 +135,10 @@ export function isOSCType<T extends OSCType>(arg: OSCArgument, type: T): arg is 
   return arg && arg.type === type;
 }
 
+export function isSingleOSCType<T extends OSCType>(args: OSCArgument[], type: T): args is OSCArgumentOfType<T>[] {
+  return args.every((arg) => isOSCType(arg, type));
+}
+
 export function isAnyOSCType<T extends OSCType>(arg: OSCArgument, ...types: T[]): arg is OSCArgumentOfType<T> {
   return arg && types.includes(arg.type as any);
 }
@@ -152,3 +156,33 @@ export function assertAnyOSCType<T extends OSCType>(arg: OSCArgument, ...types: 
     throw new TypeError(`Unexpected OSC value type "${arg.type}", expected "${expected}"`);
   }
 }
+
+export const osc = {
+  int: (value: number): OSCInt => ({ type: 'i', value }),
+  float: (value: number): OSCFloat => ({ type: 'f', value }),
+  string: (value: string): OSCString => ({ type: 's', value }),
+  blob: (value: Uint8Array): OSCBlob => ({ type: 'b', value }),
+  bigint: (value: bigint): OSCBigInt => ({ type: 'h', value }),
+  timetag: (value: bigint): OSCTimeTag => ({ type: 't', value }),
+  double: (value: number): OSCDouble => ({ type: 'd', value }),
+  symbol: (value: string): OSCSymbol => ({ type: 'S', value }),
+  char: (value: string): OSCChar => ({ type: 'c', value }),
+  color: (value: OSCColorValue | number, g?: number, b?: number, a?: number): OSCColor => {
+    if (typeof value === 'number') {
+      value = new OSCColorValue(value, g!, b, a);
+    }
+
+    return { type: 'r', value };
+  },
+  midi: (value: OSCMIDIValue | number, status?: number, data1?: number, data2?: number): OSCMIDI => {
+    if (typeof value === 'number') {
+      value = new OSCMIDIValue(value, status!, data1, data2);
+    }
+
+    return { type: 'm', value };
+  },
+  bool: (value: boolean): OSCBool => ({ type: 'B', value }),
+  null: (): OSCNull => ({ type: 'N', value: null }),
+  infinity: (): OSCInfinity => ({ type: 'I', value: Infinity }),
+  array: (...value: OSCArgument[]): OSCArray => ({ type: 'a', value }),
+};

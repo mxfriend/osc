@@ -1,12 +1,5 @@
 import { AbstractOSCPort } from './abstractPort';
-
-if (typeof Buffer === 'undefined') {
-  console.error(
-    'The @mxfriend/osc/ws package requires a Buffer implementation '
-    + 'compatible with the NodeJS Buffer built-in. See for example '
-    + 'https://www.npmjs.com/package/buffer'
-  );
-}
+import { Packet, PacketInterface } from './buffer';
 
 type WebsocketEvents = {
   error: (error: Event) => void;
@@ -29,9 +22,9 @@ export class WebsocketPort extends AbstractOSCPort<never, WebsocketEvents> {
     sock && sock.close();
   }
 
-  protected async sendPacket(packet: Buffer): Promise<void> {
+  protected async sendPacket(packet: PacketInterface): Promise<void> {
     const sock = await this.connect();
-    sock.send(packet);
+    sock.send(packet.buffer);
   }
 
   private async connect(): Promise<WebSocket> {
@@ -57,8 +50,8 @@ export class WebsocketPort extends AbstractOSCPort<never, WebsocketEvents> {
   }
 
   private handleMessage(evt: MessageEvent): void {
-    if (Buffer.isBuffer(evt.data)) {
-      this.receive(evt.data);
+    if (evt.data instanceof ArrayBuffer) {
+      this.receive(new Packet(evt.data));
     }
   }
 

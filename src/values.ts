@@ -5,13 +5,13 @@ export class OSCColorValue {
   a: number;
 
   constructor(rgba: number);
-  constructor(r: number, g: number, b: number, a: number);
-  constructor(r: number, g?: number, b?: number, a?: number) {
+  constructor(r: number, g: number, b?: number, a?: number);
+  constructor(r: number, g?: number, b: number = 0, a: number = 0) {
     if (typeof g === 'number') {
       this.r = r;
       this.g = g;
-      this.b = b!;
-      this.a = a!;
+      this.b = b;
+      this.a = a;
     } else {
       this.r = ((r >>> 24) & 0xff) >>> 0;
       this.g = ((r >>> 16) & 0xff) >>> 0;

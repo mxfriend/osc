@@ -1,8 +1,7 @@
+import { Cursor, PacketInterface } from './buffer';
 import { OSCArgument, OSCArray, OSCBundle, OSCBundleElement, OSCMessage } from './types';
 import { BUNDLE_TAG } from './utils';
 import { OSCColorValue, OSCMIDIValue } from './values';
-
-type Cursor = { index: number };
 
 export class OSCDecoder {
   private readonly knownAddresses: Set<string> = new Set();
@@ -39,8 +38,8 @@ export class OSCDecoder {
     this.checkKnown = false;
   }
 
-  public * decodePacket(packet: Buffer, full: boolean = false): IterableIterator<OSCBundleElement> {
-    const cursor: Cursor = { index: 0 };
+  public * decodePacket(packet: PacketInterface, full: boolean = false): IterableIterator<OSCBundleElement> {
+    const cursor = new Cursor();
     const address: string = this.scanStr(packet, cursor);
 
     if (!full && this.checkKnown) {
@@ -56,18 +55,17 @@ export class OSCDecoder {
     }
   }
 
-  private * scanBundle(packet: Buffer, cursor: Cursor): IterableIterator<OSCBundleElement> {
-    cursor.index += 8; // skip timetag
+  private * scanBundle(packet: PacketInterface, cursor: Cursor): IterableIterator<OSCBundleElement> {
+    cursor.inc(8); // skip timetag
 
     while (cursor.index < packet.byteLength) {
       yield * this.decodePacket(this.scanBlob(packet, cursor));
     }
   }
 
-  private decodeBundle(packet: Buffer, cursor: Cursor): OSCBundle {
+  private decodeBundle(packet: PacketInterface, cursor: Cursor): OSCBundle {
     const elements: (OSCBundle | OSCMessage)[] = [];
-    const timetag = packet.readBigInt64BE(cursor.index);
-    cursor.index += 8;
+    const timetag = packet.readBigInt64BE(cursor.inc(8));
 
     while (cursor.index < packet.byteLength) {
       elements.push(...this.decodePacket(this.scanBlob(packet, cursor), true));
@@ -76,14 +74,14 @@ export class OSCDecoder {
     return { elements, timetag };
   }
 
-  private decodeMessage(packet: Buffer, address: string, cursor: Cursor): OSCMessage {
+  private decodeMessage(packet: PacketInterface, address: string, cursor: Cursor): OSCMessage {
     const args: OSCArgument[] = [];
 
     if (cursor.index >= packet.byteLength || packet[cursor.index] !== 0x2c) { // ","
       return { address, args };
     }
 
-    ++cursor.index;
+    cursor.inc(1);
     const types = this.scanStr(packet, cursor);
     const stack: OSCArgument[][] = [];
     let arr: OSCArgument[] = args;
@@ -91,12 +89,10 @@ export class OSCDecoder {
     for (let i = 0; i < types.length; ++i) {
       switch (types[i]) {
         case 'i':
-          arr.push({ type: 'i', value: packet.readInt32BE(cursor.index) });
-          cursor.index += 4;
+          arr.push({ type: 'i', value: packet.readInt32BE(cursor.inc(4)) });
           break;
         case 'f':
-          arr.push({ type: 'f', value: packet.readFloatBE(cursor.index) });
-          cursor.index += 4;
+          arr.push({ type: 'f', value: packet.readFloatBE(cursor.inc(4)) });
           break;
         case 's':
         case 'S':
@@ -107,24 +103,20 @@ export class OSCDecoder {
           break;
         case 'h':
         case 't':
-          arr.push({ type: types[i] as any, value: packet.readBigInt64BE(cursor.index) });
-          cursor.index += 8;
+          arr.push({ type: types[i] as any, value: packet.readBigInt64BE(cursor.inc(8)) });
           break;
         case 'd':
-          arr.push({ type: 'd', value: packet.readDoubleBE(cursor.index) });
-          cursor.index += 8;
+          arr.push({ type: 'd', value: packet.readDoubleBE(cursor.inc(8)) });
           break;
         case 'c':
-          arr.push({ type: 'c', value: String.fromCharCode(packet.readUint8(cursor.index + 3)) });
-          cursor.index += 4;
+          cursor.inc(3);
+          arr.push({ type: 'c', value: String.fromCharCode(packet.readUint8(cursor.inc(1))) });
           break;
         case 'r':
-          arr.push({ type: 'r', value: new OSCColorValue(packet.readUint32BE(cursor.index)) });
-          cursor.index += 4;
+          arr.push({ type: 'r', value: new OSCColorValue(packet.readUint32BE(cursor.inc(4))) });
           break;
         case 'm':
-          arr.push({ type: 'm', value: new OSCMIDIValue(packet.readUint32BE(cursor.index)) });
-          cursor.index += 4;
+          arr.push({ type: 'm', value: new OSCMIDIValue(packet.readUint32BE(cursor.inc(4))) });
           break;
         case 'T':
           arr.push({ type: 'B', value: true });
@@ -167,24 +159,24 @@ export class OSCDecoder {
     return { address, args };
   }
 
-  private scanStr(packet: Buffer, cursor: Cursor): string {
+  private scanStr(packet: PacketInterface, cursor: Cursor): string {
     const start = cursor.index;
 
     for (; cursor.index < packet.length; ++cursor.index) {
       if (packet[cursor.index] === 0) {
-        const str = packet.slice(start, cursor.index).toString('ascii');
-        cursor.index += 4 - cursor.index % 4;
+        const str = packet.subarray(start, cursor.index).toString('ascii');
+        cursor.inc(4 - cursor.index % 4);
         return str;
       }
     }
 
-    return packet.slice(start).toString('ascii');
+    return packet.subarray(start).toString('ascii');
   }
 
-  private scanBlob(packet: Buffer, cursor: Cursor): Buffer {
-    const length = packet.readInt32BE(cursor.index);
-    const buf = packet.slice(cursor.index + 4, cursor.index + 4 + length);
-    cursor.index += 4 + length;
+  private scanBlob(packet: PacketInterface, cursor: Cursor): PacketInterface {
+    const length = packet.readInt32BE(cursor.inc(4));
+    const buf = packet.subarray(cursor.index, cursor.index + length);
+    cursor.inc(length);
     return buf;
   }
 

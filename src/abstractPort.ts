@@ -1,3 +1,4 @@
+import { PacketInterface } from './buffer';
 import { OSCDecoder } from './decoder';
 import { OSCEncoder } from './encoder';
 import { EventEmitter, EventMap, MergeEventMap } from './eventEmitter';
@@ -18,9 +19,9 @@ export abstract class AbstractOSCPort<
   private readonly decoder: OSCDecoder = new OSCDecoder();
   private readonly subscribers: Map<string, Set<SubscriptionHandler<TPeer>>> = new Map();
 
-  protected abstract sendPacket(packet: Buffer, to?: TPeer): Promise<void> | void;
+  protected abstract sendPacket(packet: PacketInterface, to?: TPeer): Promise<void> | void;
 
-  protected receive(packet: Buffer, from?: TPeer): void {
+  protected receive(packet: PacketInterface, from?: TPeer): void {
     for (const element of this.decoder.decodePacket(packet)) {
       this.emitOSCElement(element, from);
     }
