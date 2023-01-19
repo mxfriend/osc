@@ -5,7 +5,7 @@ type WebsocketEvents = {
   error: (error: Event) => void;
 };
 
-export class WebsocketPort extends AbstractOSCPort<never, WebsocketEvents> {
+export class WebsocketOSCPort extends AbstractOSCPort<WebSocket, WebsocketEvents> {
   private readonly url: string;
   private sock?: Promise<WebSocket>;
 
@@ -22,8 +22,8 @@ export class WebsocketPort extends AbstractOSCPort<never, WebsocketEvents> {
     sock && sock.close();
   }
 
-  protected async sendPacket(packet: PacketInterface): Promise<void> {
-    const sock = await this.connect();
+  protected async sendPacket(packet: PacketInterface, peer?: WebSocket): Promise<void> {
+    const sock = peer ?? await this.connect();
     sock.send(packet.buffer);
   }
 
@@ -34,6 +34,7 @@ export class WebsocketPort extends AbstractOSCPort<never, WebsocketEvents> {
 
     return this.sock = new Promise((resolve, reject) => {
       const sock = new WebSocket(this.url);
+      sock.binaryType = 'arraybuffer';
 
       attachListeners(sock, {
         open: () => {
@@ -49,9 +50,9 @@ export class WebsocketPort extends AbstractOSCPort<never, WebsocketEvents> {
     });
   }
 
-  private handleMessage(evt: MessageEvent): void {
+  private handleMessage(evt: MessageEvent, sock?: WebSocket): void {
     if (evt.data instanceof ArrayBuffer) {
-      this.receive(new Packet(evt.data));
+      this.receive(new Packet(evt.data), sock);
     }
   }
 
