@@ -20,7 +20,7 @@ type UdpEvents = {
 };
 
 export class UdpOSCPort<
-  TEvents extends EventMapExtension<UdpEvents>,
+  TEvents extends EventMapExtension<UdpEvents> = {},
 > extends AbstractOSCPort<UdpOSCPeer, MergeEventMap<UdpEvents, TEvents>> {
   private readonly options: UdpOSCPortOptions;
   private readonly sock: Socket;

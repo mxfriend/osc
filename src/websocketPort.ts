@@ -7,7 +7,7 @@ type WebsocketEvents = {
 };
 
 export class WebsocketOSCPort<
-  TEvents extends EventMapExtension<WebsocketEvents>,
+  TEvents extends EventMapExtension<WebsocketEvents> = {},
 > extends AbstractOSCPort<WebSocket, MergeEventMap<WebsocketEvents, TEvents>> {
   private readonly url: string;
   private sock?: Promise<WebSocket>;
@@ -18,6 +18,10 @@ export class WebsocketOSCPort<
     this.handleMessage = this.handleMessage.bind(this);
     this.handleClose = this.handleClose.bind(this);
     this.handleError = this.handleError.bind(this);
+  }
+
+  async open(): Promise<void> {
+    await this.connect();
   }
 
   async close(): Promise<void> {
@@ -46,6 +50,7 @@ export class WebsocketOSCPort<
             close: this.handleClose,
             error: this.handleError,
           }, ['message']);
+
           resolve(sock);
         },
         error: reject,
