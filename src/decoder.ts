@@ -1,7 +1,7 @@
 import { Cursor, BufferInterface } from './buffer';
-import { OSCArgument, OSCArray, OSCBundle, OSCBundleElement, OSCMessage } from './types';
+import { osc } from './helpers';
+import { OSCArgument, OSCBundle, OSCBundleElement, OSCMessage } from './types';
 import { BUNDLE_TAG } from './utils';
-import { OSCColorValue, OSCMIDIValue } from './values';
 
 export class OSCDecoder {
   private readonly knownAddresses: Set<string> = new Set();
@@ -73,49 +73,49 @@ export class OSCDecoder {
     for (let i = 0; i < types.length; ++i) {
       switch (types[i]) {
         case 'i':
-          arr.push({ type: 'i', value: packet.readInt32BE(cursor.inc(4)) });
+          arr.push(osc.int(packet.readInt32BE(cursor.inc(4))));
           break;
         case 'f':
-          arr.push({ type: 'f', value: packet.readFloatBE(cursor.inc(4)) });
+          arr.push(osc.float(packet.readFloatBE(cursor.inc(4))));
           break;
         case 's':
         case 'S':
           arr.push({ type: types[i] as any, value: this.scanStr(packet, cursor) });
           break;
         case 'b':
-          arr.push({ type: 'b', value: this.scanBlob(packet, cursor) });
+          arr.push(osc.blob(this.scanBlob(packet, cursor)));
           break;
         case 'h':
         case 't':
           arr.push({ type: types[i] as any, value: packet.readBigInt64BE(cursor.inc(8)) });
           break;
         case 'd':
-          arr.push({ type: 'd', value: packet.readDoubleBE(cursor.inc(8)) });
+          arr.push(osc.double(packet.readDoubleBE(cursor.inc(8))));
           break;
         case 'c':
           cursor.inc(3);
-          arr.push({ type: 'c', value: String.fromCharCode(packet.readUint8(cursor.inc(1))) });
+          arr.push(osc.char(String.fromCharCode(packet.readUint8(cursor.inc(1)))));
           break;
         case 'r':
-          arr.push({ type: 'r', value: new OSCColorValue(packet.readUint32BE(cursor.inc(4))) });
+          arr.push(osc.color(packet.readUint32BE(cursor.inc(4))));
           break;
         case 'm':
-          arr.push({ type: 'm', value: new OSCMIDIValue(packet.readUint32BE(cursor.inc(4))) });
+          arr.push(osc.midi(packet.readUint32BE(cursor.inc(4))));
           break;
         case 'T':
-          arr.push({ type: 'B', value: true });
+          arr.push(osc.bool(true));
           break;
         case 'F':
-          arr.push({ type: 'B', value: false });
+          arr.push(osc.bool(false));
           break;
         case 'N':
-          arr.push({ type: 'N', value: null });
+          arr.push(osc.null());
           break;
         case 'I':
-          arr.push({ type: 'I', value: Infinity });
+          arr.push(osc.infinity());
           break;
         case '[': {
-          const arg: OSCArray = { type: 'a', value: [] };
+          const arg = osc.array();
           arr.push(arg);
           stack.push(arr);
           arr = arg.value;

@@ -76,7 +76,6 @@ export type OSCArray = {
   value: OSCArgument[];
 };
 
-export type OSCType = 'i' | 'f' | 's' | 'b' | 'h' | 't' | 'd' | 'S' | 'c' | 'r' | 'm' | 'B' | 'N' | 'I' | 'a';
 export type OSCArgument =
   | OSCInt
   | OSCFloat
@@ -93,6 +92,8 @@ export type OSCArgument =
   | OSCNull
   | OSCInfinity
   | OSCArray;
+
+export type OSCType = OSCArgument['type'];
 
 export type OSCMessage = {
   address: string;
@@ -151,84 +152,15 @@ export function assertOSCType<T extends OSCType>(arg: OSCArgument, type: T): ass
   }
 }
 
+export function assertSingleOSCType<T extends OSCType>(args: OSCArgument[], type: T): asserts args is OSCArgumentOfType<T>[] {
+  if (!isSingleOSCType(args, type)) {
+    throw new TypeError(`Unexpected OSC value type in OSC argument list, expected all arguments to be "${type}"`);
+  }
+}
+
 export function assertAnyOSCType<T extends OSCType>(arg: OSCArgument, ...types: T[]): asserts arg is OSCArgumentOfType<T> {
   if (!isAnyOSCType(arg, ...types)) {
     const expected = types.length > 1 ? `${types.slice(0, -1).join(`", "`)}" or "${types.slice(-1)}` : types[0];
     throw new TypeError(`Unexpected OSC value type "${arg.type}", expected "${expected}"`);
   }
-}
-
-const factories = {
-  int: (value: number): OSCInt => ({ type: 'i', value }),
-  float: (value: number): OSCFloat => ({ type: 'f', value }),
-  string: (value: string): OSCString => ({ type: 's', value }),
-  blob: (value: BufferInterface): OSCBlob => ({ type: 'b', value }),
-  bigint: (value: bigint): OSCBigInt => ({ type: 'h', value }),
-  timetag: (value: bigint): OSCTimeTag => ({ type: 't', value }),
-  double: (value: number): OSCDouble => ({ type: 'd', value }),
-  symbol: (value: string): OSCSymbol => ({ type: 'S', value }),
-  char: (value: string): OSCChar => ({ type: 'c', value }),
-  color: (value: OSCColorValue | number, g?: number, b?: number, a?: number): OSCColor => {
-    if (typeof value === 'number') {
-      value = new OSCColorValue(value, g!, b, a);
-    }
-
-    return { type: 'r', value };
-  },
-  midi: (value: OSCMIDIValue | number, status?: number, data1?: number, data2?: number): OSCMIDI => {
-    if (typeof value === 'number') {
-      value = new OSCMIDIValue(value, status!, data1, data2);
-    }
-
-    return { type: 'm', value };
-  },
-  bool: (value: boolean): OSCBool => ({ type: 'B', value }),
-  null: (): OSCNull => ({ type: 'N', value: null }),
-  infinity: (): OSCInfinity => ({ type: 'I', value: Infinity }),
-  array: (...value: OSCArgument[]): OSCArray => ({ type: 'a', value }),
-};
-
-export const osc = {
-  ...factories,
-  optional: {
-    int: toOptional(factories.int),
-    float: toOptional(factories.float),
-    string: toOptional(factories.string),
-    blob: toOptional(factories.blob),
-    bigint: toOptional(factories.bigint),
-    timetag: toOptional(factories.timetag),
-    double: toOptional(factories.double),
-    symbol: toOptional(factories.symbol),
-    char: toOptional(factories.char),
-    color: toOptional(factories.color),
-    midi: toOptional(factories.midi),
-    bool: toOptional(factories.bool),
-    null: toOptional(factories.null),
-    infinity: toOptional(factories.infinity),
-    array: toOptional(factories.array),
-  },
-  nullable: {
-    int: toNullable(factories.int),
-    float: toNullable(factories.float),
-    string: toNullable(factories.string),
-    blob: toNullable(factories.blob),
-    bigint: toNullable(factories.bigint),
-    timetag: toNullable(factories.timetag),
-    double: toNullable(factories.double),
-    symbol: toNullable(factories.symbol),
-    char: toNullable(factories.char),
-    color: toNullable(factories.color),
-    midi: toNullable(factories.midi),
-    bool: toNullable(factories.bool),
-    infinity: toNullable(factories.infinity),
-    array: toNullable(factories.array),
-  },
-};
-
-function toOptional<T, A extends any[]>(fn: (value: T, ...args: A) => OSCArgument): (value?: T | undefined, ...args: A) => OSCArgument | undefined {
-  return (value, ...args) => value === undefined ? undefined : fn(value, ...args);
-}
-
-function toNullable<T, A extends any[]>(fn: (value: T, ...args: A) => OSCArgument): (value?: T | undefined, ...args: A) => OSCArgument {
-  return (value, ...args) => value === undefined ? { type: 'N', value: null } : fn(value, ...args);
 }
