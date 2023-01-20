@@ -1,33 +1,38 @@
-export type EventHandler = (...args: any[]) => void;
-
 export type EventMap = {
-  [event: string]: EventHandler;
+  [event: string]: [...any];
 };
+
+type K<T> = string & keyof T;
+
+export type AnyEventHandler = (...args: any) => void;
+export type EventHandler<Map extends EventMap, E extends K<Map>> = (...args: Map[E]) => void;
 
 export type MergeEventMap<A extends EventMap, B extends EventMap> = {
-  [K in keyof (A & B)]: K extends keyof A ? A[K] : K extends keyof B ? B[K] : never;
+  [K in keyof (A & B)]: [K] extends [keyof A] ? A[K] : [K] extends [keyof B] ? B[K] : never;
 };
 
-type K<M> = Exclude<keyof M, number | symbol>;
+export type EventMapExtension<TParent extends EventMap> = EventMap & {
+  [K in keyof TParent]?: never;
+};
 
 export class EventEmitter<Events extends EventMap = {}> {
-  private readonly events: Map<string, Set<EventHandler>> = new Map();
+  private readonly events: Map<string, Set<AnyEventHandler>> = new Map();
 
-  public on<Event extends K<Events>>(event: Event, handler: Events[Event]): void {
+  public on<E extends K<Events>>(event: E, handler: EventHandler<Events, E>): void {
     this.events.has(event) || this.events.set(event, new Set());
     this.events.get(event)!.add(handler);
   }
 
-  public once<Event extends K<Events>>(event: Event, handler: Events[Event]): void {
+  public once<E extends K<Events>>(event: E, handler: EventHandler<Events, E>): void {
     const wrapper = ((...args) => {
       this.off(event, wrapper);
       handler(...args);
-    }) as Events[Event];
+    }) as EventHandler<Events, E>;
 
     this.on(event, wrapper);
   }
 
-  public off<Event extends K<Events>>(event?: Event, handler?: Events[Event]): void {
+  public off<E extends K<Events>>(event?: E, handler?: EventHandler<Events, E>): void {
     if (!event) {
       this.events.clear();
     } else if (!handler) {
@@ -37,7 +42,7 @@ export class EventEmitter<Events extends EventMap = {}> {
     }
   }
 
-  public emit(event: K<Events>, ...args: any): boolean {
+  public emit<E extends K<Events>>(event: E, ...args: Events[E]): boolean {
     const listeners = this.events.get(event);
 
     if (!listeners) {

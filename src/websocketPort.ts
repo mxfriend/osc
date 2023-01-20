@@ -1,11 +1,14 @@
 import { AbstractOSCPort } from './abstractPort';
 import { Packet, PacketInterface } from './buffer';
+import { EventMapExtension, MergeEventMap } from './eventEmitter';
 
 type WebsocketEvents = {
-  error: (error: Event) => void;
+  error: [error: Event];
 };
 
-export class WebsocketOSCPort extends AbstractOSCPort<WebSocket, WebsocketEvents> {
+export class WebsocketOSCPort<
+  TEvents extends EventMapExtension<WebsocketEvents>,
+> extends AbstractOSCPort<WebSocket, MergeEventMap<WebsocketEvents, TEvents>> {
   private readonly url: string;
   private sock?: Promise<WebSocket>;
 
