@@ -1,4 +1,4 @@
-import { Cursor, PacketInterface } from './buffer';
+import { Cursor, BufferInterface } from './buffer';
 import { OSCArgument, OSCArray, OSCBundle, OSCBundleElement, OSCMessage } from './types';
 import { BUNDLE_TAG } from './utils';
 import { OSCColorValue, OSCMIDIValue } from './values';
@@ -22,7 +22,7 @@ export class OSCDecoder {
     this.checkKnown = false;
   }
 
-  public * decodePacket(packet: PacketInterface, full: boolean = false): IterableIterator<OSCBundleElement> {
+  public * decodePacket(packet: BufferInterface, full: boolean = false): IterableIterator<OSCBundleElement> {
     const cursor = new Cursor();
     const address: string = this.scanStr(packet, cursor);
 
@@ -39,7 +39,7 @@ export class OSCDecoder {
     }
   }
 
-  private * scanBundle(packet: PacketInterface, cursor: Cursor): IterableIterator<OSCBundleElement> {
+  private * scanBundle(packet: BufferInterface, cursor: Cursor): IterableIterator<OSCBundleElement> {
     cursor.inc(8); // skip timetag
 
     while (cursor.index < packet.byteLength) {
@@ -47,7 +47,7 @@ export class OSCDecoder {
     }
   }
 
-  private decodeBundle(packet: PacketInterface, cursor: Cursor): OSCBundle {
+  private decodeBundle(packet: BufferInterface, cursor: Cursor): OSCBundle {
     const elements: (OSCBundle | OSCMessage)[] = [];
     const timetag = packet.readBigInt64BE(cursor.inc(8));
 
@@ -58,7 +58,7 @@ export class OSCDecoder {
     return { elements, timetag };
   }
 
-  private decodeMessage(packet: PacketInterface, address: string, cursor: Cursor): OSCMessage {
+  private decodeMessage(packet: BufferInterface, address: string, cursor: Cursor): OSCMessage {
     const args: OSCArgument[] = [];
 
     if (cursor.index >= packet.byteLength || packet[cursor.index] !== 0x2c) { // ","
@@ -143,7 +143,7 @@ export class OSCDecoder {
     return { address, args };
   }
 
-  private scanStr(packet: PacketInterface, cursor: Cursor): string {
+  private scanStr(packet: BufferInterface, cursor: Cursor): string {
     const start = cursor.index;
 
     for (; cursor.index < packet.length; ++cursor.index) {
@@ -157,7 +157,7 @@ export class OSCDecoder {
     return packet.subarray(start).toString('ascii');
   }
 
-  private scanBlob(packet: PacketInterface, cursor: Cursor): PacketInterface {
+  private scanBlob(packet: BufferInterface, cursor: Cursor): BufferInterface {
     const length = packet.readInt32BE(cursor.inc(4));
     const buf = packet.subarray(cursor.index, cursor.index + length);
     cursor.inc(length);

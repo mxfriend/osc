@@ -1,5 +1,5 @@
 import { AbstractOSCPort } from './abstractPort';
-import { Packet, PacketInterface } from './buffer';
+import { $Buffer, BufferInterface } from './buffer';
 import { EventMapExtension, MergeEventMap } from './eventEmitter';
 
 type WebsocketEvents = {
@@ -25,7 +25,7 @@ export class WebsocketOSCPort<
     sock && sock.close();
   }
 
-  protected async sendPacket(packet: PacketInterface, peer?: WebSocket): Promise<void> {
+  protected async sendPacket(packet: BufferInterface, peer?: WebSocket): Promise<void> {
     const sock = peer ?? await this.connect();
     sock.send(packet.buffer);
   }
@@ -55,7 +55,7 @@ export class WebsocketOSCPort<
 
   private handleMessage(evt: MessageEvent, sock?: WebSocket): void {
     if (evt.data instanceof ArrayBuffer) {
-      this.receive(new Packet(evt.data), sock);
+      this.receive(new $Buffer(evt.data), sock);
     }
   }
 

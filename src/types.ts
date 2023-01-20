@@ -1,3 +1,4 @@
+import { BufferInterface } from './buffer';
 import { OSCColorValue, OSCMIDIValue } from './values';
 
 export type OSCInt = {
@@ -17,7 +18,7 @@ export type OSCString = {
 
 export type OSCBlob = {
   type: 'b';
-  value: Uint8Array;
+  value: BufferInterface;
 };
 
 export type OSCBigInt = {
@@ -161,7 +162,7 @@ const factories = {
   int: (value: number): OSCInt => ({ type: 'i', value }),
   float: (value: number): OSCFloat => ({ type: 'f', value }),
   string: (value: string): OSCString => ({ type: 's', value }),
-  blob: (value: Uint8Array): OSCBlob => ({ type: 'b', value }),
+  blob: (value: BufferInterface): OSCBlob => ({ type: 'b', value }),
   bigint: (value: bigint): OSCBigInt => ({ type: 'h', value }),
   timetag: (value: bigint): OSCTimeTag => ({ type: 't', value }),
   double: (value: number): OSCDouble => ({ type: 'd', value }),

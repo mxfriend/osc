@@ -8,13 +8,14 @@ export class Cursor {
   }
 }
 
-export interface PacketInterface extends Uint8Array {
-  subarray(start?: number, end?: number): PacketInterface;
-  equals(other: PacketInterface): boolean;
+export interface BufferInterface extends Uint8Array {
+  subarray(start?: number, end?: number): BufferInterface;
+  equals(other: BufferInterface): boolean;
 
   readUint8(offset: number): number;
   readUint32BE(offset: number): number;
   readInt32BE(offset: number): number;
+  readInt32LE(offset: number): number;
   readFloatBE(offset: number): number;
   readDoubleBE(offset: number): number;
   readBigInt64BE(offset: number): bigint;
@@ -24,6 +25,7 @@ export interface PacketInterface extends Uint8Array {
   writeUint8(value: number, offset?: number): number;
   writeUint32BE(value: number, offset?: number): number;
   writeInt32BE(value: number, offset?: number): number;
+  writeInt32LE(value: number, offset?: number): number;
   writeFloatBE(value: number, offset?: number): number;
   writeDoubleBE(value: number, offset?: number): number;
   writeBigInt64BE(value: bigint, offset?: number): number;
@@ -31,7 +33,7 @@ export interface PacketInterface extends Uint8Array {
 
 const textDecoder = new TextDecoder('ascii');
 
-export class BufferPolyfill extends Uint8Array implements PacketInterface {
+export class BufferPolyfill extends Uint8Array implements BufferInterface {
   private readonly view: DataView;
 
   static from(value: any): BufferPolyfill {
@@ -56,7 +58,7 @@ export class BufferPolyfill extends Uint8Array implements PacketInterface {
     return new BufferPolyfill(new ArrayBuffer(size));
   }
 
-  static concat(buffers: PacketInterface[]): PacketInterface {
+  static concat(buffers: BufferInterface[]): BufferInterface {
     const size = buffers.reduce((s, b) => s + b.byteLength, 0);
     const tmp = new Uint8Array(size);
     let offset = 0;
@@ -80,7 +82,7 @@ export class BufferPolyfill extends Uint8Array implements PacketInterface {
     return new BufferPolyfill(this.buffer, start, start !== undefined && end !== undefined ? end - start : undefined);
   }
 
-  equals(other: PacketInterface): boolean {
+  equals(other: BufferInterface): boolean {
     return this.every((v, i) => v === other[i]);
   }
 
@@ -92,6 +94,9 @@ export class BufferPolyfill extends Uint8Array implements PacketInterface {
   }
   readInt32BE(offset: number): number {
     return this.view.getInt32(offset);
+  }
+  readInt32LE(offset: number): number {
+    return this.view.getInt32(offset, true);
   }
   readFloatBE(offset: number): number {
     return this.view.getFloat32(offset);
@@ -118,6 +123,10 @@ export class BufferPolyfill extends Uint8Array implements PacketInterface {
     this.view.setInt32(offset, value);
     return offset + 4;
   }
+  writeInt32LE(value: number, offset: number = 0): number {
+    this.view.setInt32(offset, value, true);
+    return offset + 4;
+  }
   writeFloatBE(value: number, offset: number = 0): number {
     this.view.setFloat32(offset, value);
     return offset + 4;
@@ -132,4 +141,4 @@ export class BufferPolyfill extends Uint8Array implements PacketInterface {
   }
 }
 
-export const Packet = typeof Buffer === 'undefined' ? BufferPolyfill : Buffer;
+export const $Buffer = typeof Buffer === 'undefined' ? BufferPolyfill : Buffer;
