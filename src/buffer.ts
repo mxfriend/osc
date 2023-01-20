@@ -37,7 +37,9 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
   private readonly view: DataView;
 
   static from(value: any): BufferPolyfill {
-    if (typeof value !== 'string') {
+    if (value instanceof ArrayBuffer) {
+      return new BufferPolyfill(value);
+    } else if (typeof value !== 'string') {
       throw new TypeError('This method only supports string input');
     }
 
@@ -58,9 +60,9 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
     return new BufferPolyfill(new ArrayBuffer(size));
   }
 
-  static concat(buffers: BufferInterface[]): BufferInterface {
+  static concat(buffers: Uint8Array[]): BufferInterface {
     const size = buffers.reduce((s, b) => s + b.byteLength, 0);
-    const tmp = new Uint8Array(size);
+    const tmp = new BufferPolyfill(size);
     let offset = 0;
 
     for (const src of buffers) {
@@ -68,9 +70,10 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
       offset += src.byteLength;
     }
 
-    return new BufferPolyfill(tmp.buffer);
+    return tmp;
   }
 
+  constructor(size: number);
   constructor(elements: Iterable<number>);
   constructor(buffer: ArrayBuffer, byteOffset?: number, length?: number);
   constructor(a0: any, a1?: any, a2?: any) {
