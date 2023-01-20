@@ -25,6 +25,17 @@ import { OSCColorValue, OSCMIDIValue } from './values';
 export type OSCRestType = `...${OSCType}`;
 export type OSCOptionalType = `${OSCType}?`;
 export type OSCTypeSpec = OSCType | OSCOptionalType | OSCRestType;
+
+export type OSCArg<T extends OSCTypeSpec> =
+  T extends `...${infer P extends OSCType}` ? OSCArgumentOfType<P>[]
+    : T extends `${infer P extends OSCType}?` ? OSCArgumentOfType<P> | undefined
+      : T extends OSCType ? OSCArgumentOfType<T>
+        : never;
+
+export type OSCArgs<Types extends [...OSCTypeSpec[]]> =
+  | { [T in keyof Types]: OSCArg<Types[T]> }
+  | { [T in keyof Types]: undefined };
+
 export type OSCValue<T extends OSCTypeSpec> =
   T extends `...${infer P extends OSCType}` ? OSCArgumentOfType<P>['value'][]
     : T extends `${infer P extends OSCType}?` ? OSCArgumentOfType<P>['value'] | undefined
@@ -36,9 +47,9 @@ export type OSCValues<Types extends [...OSCTypeSpec[]]> =
   | { [T in keyof Types]: undefined };
 
 
-function extractArgs<T extends [...OSCTypeSpec[]]>(args?: OSCArgument[], ...types: T): OSCValues<T> {
+function validateArgs<T extends [...OSCTypeSpec[]]>(args?: OSCArgument[], ...types: T): OSCArgs<T> {
   if (!args) {
-    return [] as OSCValues<T>;
+    return [] as OSCArgs<T>;
   }
 
   const extracted: any[] = [];
@@ -51,24 +62,29 @@ function extractArgs<T extends [...OSCTypeSpec[]]>(args?: OSCArgument[], ...type
       const arr: any[] = [];
 
       while (isOSCType(args[i], type as OSCType)) {
-        arr.push(args[i].value);
+        arr.push(args[i]);
         ++i;
       }
 
       extracted.push(arr);
     } else {
       if (isOSCType(args[i], type as OSCType)) {
-        extracted.push(args[i].value);
+        extracted.push(args[i]);
         ++i;
       } else if (optional) {
         extracted.push(undefined);
       } else {
-        return [] as OSCValues<T>;
+        return [] as OSCArgs<T>;
       }
     }
   }
 
-  return extracted as OSCValues<T>;
+  return extracted as OSCArgs<T>;
+}
+
+function extractArgs<T extends [...OSCTypeSpec[]]>(args?: OSCArgument[], ...types: T): OSCValues<T> {
+  return validateArgs(args, ...types)
+    .map((a) => Array.isArray(a) ? a.map((v) => v.value) : a?.value) as OSCValues<T>;
 }
 
 type S = OSCTypeSpec;
@@ -141,6 +157,7 @@ const factories = {
 
 export const osc = {
   compose: composeArgs,
+  validate: validateArgs,
   extract: extractArgs,
   ...factories,
   optional: {
