@@ -17,6 +17,7 @@ export interface BufferInterface extends Uint8Array {
   readInt32BE(offset: number): number;
   readInt32LE(offset: number): number;
   readFloatBE(offset: number): number;
+  readFloatLE(offset: number): number;
   readDoubleBE(offset: number): number;
   readBigInt64BE(offset: number): bigint;
 
@@ -27,8 +28,13 @@ export interface BufferInterface extends Uint8Array {
   writeInt32BE(value: number, offset?: number): number;
   writeInt32LE(value: number, offset?: number): number;
   writeFloatBE(value: number, offset?: number): number;
+  writeFloatLE(value: number, offset?: number): number;
   writeDoubleBE(value: number, offset?: number): number;
   writeBigInt64BE(value: bigint, offset?: number): number;
+
+  write(value: string, encoding?: 'ascii'): number;
+  write(value: string, offset: number, encoding?: 'ascii'): number;
+  write(value: string, offset: number, length: number, encoding?: 'ascii'): number;
 }
 
 const textDecoder = new TextDecoder('ascii');
@@ -104,6 +110,9 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
   readFloatBE(offset: number): number {
     return this.view.getFloat32(offset);
   }
+  readFloatLE(offset: number): number {
+    return this.view.getFloat32(offset, true);
+  }
   readDoubleBE(offset: number): number {
     return this.view.getFloat64(offset);
   }
@@ -134,6 +143,10 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
     this.view.setFloat32(offset, value);
     return offset + 4;
   }
+  writeFloatLE(value: number, offset: number = 0): number {
+    this.view.setFloat32(offset, value, true);
+    return offset + 4;
+  }
   writeDoubleBE(value: number, offset: number = 0): number {
     this.view.setFloat64(offset, value);
     return offset + 8;
@@ -141,6 +154,20 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
   writeBigInt64BE(value: bigint, offset: number = 0): number {
     this.view.setBigInt64(offset, value);
     return offset + 8;
+  }
+
+  write(value: string, encoding?: 'ascii'): number;
+  write(value: string, offset: number, encoding?: 'ascii'): number;
+  write(value: string, offset: number, length: number, encoding?: 'ascii'): number;
+  write(value: string, a?: any, b?: any, c?: any): number {
+    const offset = typeof a === 'number' ? a : 0;
+    const length = Math.min(this.view.byteLength - offset, typeof b === 'number' ? b : value.length);
+
+    for (let i = 0; i < length; ++i) {
+      this.view.setUint8(offset + i, value.charCodeAt(i));
+    }
+
+    return length;
   }
 }
 
