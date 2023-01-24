@@ -1,19 +1,11 @@
-export type EventMap = {
+export interface EventMap {
   [event: string]: [...any];
-};
+}
 
 type K<T> = string & keyof T;
 
 export type AnyEventHandler = (...args: any) => void;
 export type EventHandler<Map extends EventMap, E extends K<Map>> = (...args: Map[E]) => void;
-
-export type MergeEventMap<A extends EventMap, B extends EventMap> = {
-  [K in keyof (A & B)]: [K] extends [keyof A] ? A[K] : [K] extends [keyof B] ? B[K] : never;
-};
-
-export type EventMapExtension<TParent extends EventMap> = EventMap & {
-  [K in keyof TParent]?: never;
-};
 
 export class EventEmitter<Events extends EventMap = {}> {
   private readonly events: Map<string, Set<AnyEventHandler>> = new Map();

@@ -1,6 +1,5 @@
 import { Socket, RemoteInfo, createSocket } from 'dgram';
-import { AbstractOSCPort } from './abstractPort';
-import { EventMapExtension, MergeEventMap } from './eventEmitter';
+import { AbstractOSCPort, CommonOSCEvents } from './abstractPort';
 
 export type UdpOSCPortOptions = {
   localAddress?: string;
@@ -15,13 +14,13 @@ export type UdpOSCPeer = {
   port: number;
 };
 
-type UdpEvents = {
+interface UdpOSCEvents extends CommonOSCEvents<UdpOSCPeer> {
   error: [error: any];
-};
+}
 
 export class UdpOSCPort<
-  TEvents extends EventMapExtension<UdpEvents> = {},
-> extends AbstractOSCPort<UdpOSCPeer, MergeEventMap<UdpEvents, TEvents>> {
+  TEvents extends UdpOSCEvents = UdpOSCEvents,
+> extends AbstractOSCPort<UdpOSCPeer, TEvents> {
   private readonly options: UdpOSCPortOptions;
   private readonly sock: Socket;
   private opened: boolean;

@@ -1,3 +1,5 @@
+import { TextDecoder } from 'util';
+
 export class Cursor {
   index: number = 0;
 
@@ -37,7 +39,7 @@ export interface BufferInterface extends Uint8Array {
   write(value: string, offset: number, length: number, encoding?: 'ascii'): number;
 }
 
-const textDecoder = new TextDecoder('ascii');
+let textDecoder: TextDecoder;
 
 export class BufferPolyfill extends Uint8Array implements BufferInterface {
   private readonly view: DataView;
@@ -120,6 +122,7 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
     return this.view.getBigInt64(offset);
   }
   toString(encoding?: 'ascii'): string {
+    textDecoder ??= new TextDecoder('ascii');
     return textDecoder.decode(this.buffer);
   }
 

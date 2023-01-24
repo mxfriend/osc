@@ -1,8 +1,14 @@
 import { WebSocket } from 'ws';
-import { AbstractOSCPort } from './abstractPort';
+import { AbstractOSCPort, CommonOSCEvents } from './abstractPort';
 import { BufferInterface } from './buffer';
 
-export class WsOSCPort extends AbstractOSCPort<WebSocket> {
+export interface WsOSCEvents extends CommonOSCEvents<WebSocket> {
+  close: [];
+}
+
+export class WsOSCPort<
+  TEvents extends WsOSCEvents = WsOSCEvents,
+> extends AbstractOSCPort<WebSocket, TEvents> {
   private readonly sock: WebSocket;
 
   constructor(sock: WebSocket) {
@@ -24,6 +30,7 @@ export class WsOSCPort extends AbstractOSCPort<WebSocket> {
     sock.on('close', () => {
       sock.removeAllListeners();
       clearInterval(ping);
+      this.emit('close');
     });
   }
 

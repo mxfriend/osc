@@ -1,14 +1,13 @@
-import { AbstractOSCPort } from './abstractPort';
+import { AbstractOSCPort, CommonOSCEvents } from './abstractPort';
 import { $Buffer, BufferInterface } from './buffer';
-import { EventMapExtension, MergeEventMap } from './eventEmitter';
 
-type WebsocketEvents = {
+interface WebsocketEvents extends CommonOSCEvents<WebSocket> {
   error: [error: Event];
-};
+}
 
 export class WebsocketOSCPort<
-  TEvents extends EventMapExtension<WebsocketEvents> = {},
-> extends AbstractOSCPort<WebSocket, MergeEventMap<WebsocketEvents, TEvents>> {
+  TEvents extends WebsocketEvents = WebsocketEvents,
+> extends AbstractOSCPort<WebSocket, TEvents> {
   private readonly url: string;
   private sock?: Promise<WebSocket>;
 

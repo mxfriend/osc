@@ -1,20 +1,20 @@
 import { BufferInterface } from './buffer';
 import { OSCDecoder } from './decoder';
 import { OSCEncoder } from './encoder';
-import { EventEmitter, EventMapExtension, MergeEventMap } from './eventEmitter';
+import { EventEmitter, EventMap } from './eventEmitter';
 import { OSCArgument, OSCBundle, OSCBundleElement, OSCMessage, isBundle } from './types';
 
 export type SubscriptionHandler<TPeer = unknown> = (message: OSCMessage, peer?: TPeer) => void;
 
-export type CommonEvents<TPeer = unknown> = {
+export interface CommonOSCEvents<TPeer = unknown> extends EventMap {
   bundle: [bundle: OSCBundle, peer?: TPeer];
   message: [message: OSCMessage, peer?: TPeer];
-};
+}
 
 export abstract class AbstractOSCPort<
   TPeer = unknown,
-  TEvents extends EventMapExtension<CommonEvents<TPeer>> = {},
-> extends EventEmitter<MergeEventMap<CommonEvents<TPeer>, TEvents>> {
+  TEvents extends CommonOSCEvents<TPeer> = CommonOSCEvents<TPeer>,
+> extends EventEmitter<TEvents> {
   private readonly encoder: OSCEncoder = new OSCEncoder();
   private readonly decoder: OSCDecoder = new OSCDecoder();
   private readonly subscribers: Map<string, Set<SubscriptionHandler<TPeer>>> = new Map();
