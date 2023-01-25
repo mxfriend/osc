@@ -106,11 +106,21 @@ expect.extend({
 });
 
 function compareBuffers(a: any, b: any): boolean | undefined {
-  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+  if (!(a instanceof Uint8Array) || !(b instanceof Uint8Array)) {
     return undefined;
   }
 
-  return a.equals(b);
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  if (Buffer.isBuffer(a)) {
+    return a.equals(b);
+  } else if (Buffer.isBuffer(b)) {
+    return b.equals(a);
+  } else {
+    return a.every((v, i) => b[i] === v);
+  }
 }
 
 function compareFloats(a: any, b: any): boolean | undefined {

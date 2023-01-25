@@ -39,22 +39,43 @@ export interface BufferInterface extends Uint8Array {
   write(value: string, offset: number, length: number, encoding?: 'ascii'): number;
 }
 
+const hexMap = new Map<string, number>([
+  ['0', 0], ['1', 1], ['2', 2], ['3', 3], ['4', 4], ['5', 5], ['6', 6], ['7', 7], ['8', 8], ['9', 9],
+  ['a', 10], ['b', 11], ['c', 12], ['d', 13], ['e', 14], ['f', 15],
+  ['A', 10], ['B', 11], ['C', 12], ['D', 13], ['E', 14], ['F', 15],
+]);
+
 let textDecoder: TextDecoder;
 
 export class BufferPolyfill extends Uint8Array implements BufferInterface {
   private readonly view: DataView;
 
-  static from(value: any): BufferPolyfill {
+  static from(value: any, encoding?: any): BufferPolyfill {
     if (value instanceof ArrayBuffer) {
       return new BufferPolyfill(value);
     } else if (typeof value !== 'string') {
       throw new TypeError('This method only supports string input');
+    } else if (encoding === 'hex') {
+      const buffer = new BufferPolyfill(value.length / 2);
+
+      for (let i = 0; i < buffer.length; ++i) {
+        const msb = hexMap.get(value.charAt(2 * i));
+        const lsb = hexMap.get(value.charAt(2 * i + 1));
+
+        if (msb === undefined || lsb === undefined) {
+          break;
+        }
+
+        buffer[i] = (msb << 4) | lsb;
+      }
+
+      return buffer;
     }
 
     const buffer = new BufferPolyfill(new ArrayBuffer(value.length));
 
     for (let i = 0; i < value.length; ++i) {
-      buffer.writeUint8(value.charCodeAt(i), i);
+      buffer[i] = value.charCodeAt(i);
     }
 
     return buffer;
