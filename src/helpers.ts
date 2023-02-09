@@ -193,6 +193,23 @@ export const osc = {
     infinity: toNullable(factories.infinity),
     array: toNullable(factories.array),
   },
+  is: {
+    int: getTypeGuard('i'),
+    float: getTypeGuard('f'),
+    string: getTypeGuard('s'),
+    blob: getTypeGuard('b'),
+    bigint: getTypeGuard('h'),
+    timetag: getTypeGuard('t'),
+    double: getTypeGuard('d'),
+    symbol: getTypeGuard('S'),
+    char: getTypeGuard('c'),
+    color: getTypeGuard('r'),
+    midi: getTypeGuard('m'),
+    bool: getTypeGuard('B'),
+    infinity: getTypeGuard('I'),
+    null: getTypeGuard('N'),
+    array: getTypeGuard('a'),
+  },
 };
 
 function toOptional<T, A extends any[]>(fn: (value: T, ...args: A) => OSCArgument): (value?: T | undefined, ...args: A) => OSCArgument | undefined {
@@ -201,4 +218,8 @@ function toOptional<T, A extends any[]>(fn: (value: T, ...args: A) => OSCArgumen
 
 function toNullable<T, A extends any[]>(fn: (value: T, ...args: A) => OSCArgument): (value?: T | undefined, ...args: A) => OSCArgument {
   return (value, ...args) => value === undefined ? { type: 'N', value: null } : fn(value, ...args);
+}
+
+function getTypeGuard<T extends OSCType>(type: T): (arg: OSCArgument) => arg is OSCArgumentOfType<T> {
+  return (arg): arg is OSCArgumentOfType<T> => isOSCType(arg, type);
 }
