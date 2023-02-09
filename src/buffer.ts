@@ -1,5 +1,3 @@
-import { TextDecoder } from 'util';
-
 export class Cursor {
   index: number = 0;
 
@@ -195,4 +193,4 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
   }
 }
 
-export const $Buffer = typeof Buffer === 'undefined' ? BufferPolyfill : Buffer;
+export const $Buffer = typeof global.Buffer === 'undefined' ? BufferPolyfill : global.Buffer;
