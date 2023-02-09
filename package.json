@@ -29,7 +29,7 @@
     },
     "./websocket": {
       "types": "./dist/websocketPort.d.ts",
-      "browser": "./dist/websocketPort.js"
+      "default": "./dist/websocketPort.js"
     },
     "./ws": {
       "types": "./dist/wsPort.d.ts",
