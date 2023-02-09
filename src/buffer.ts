@@ -142,7 +142,7 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
   }
   toString(encoding?: 'ascii'): string {
     textDecoder ??= new TextDecoder('ascii');
-    return textDecoder.decode(this.buffer);
+    return textDecoder.decode(this.buffer.slice(this.byteOffset, this.byteOffset + this.byteLength));
   }
 
   writeUint8(value: number, offset = 0): number {
