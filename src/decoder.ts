@@ -122,7 +122,7 @@ export class OSCDecoder {
           break;
         }
         case ']': {
-          const prev = stack.shift();
+          const prev = stack.pop();
 
           if (prev) {
             arr = prev;
