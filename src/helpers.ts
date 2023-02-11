@@ -7,12 +7,15 @@ import {
   OSCBigInt,
   OSCBlob,
   OSCBool,
+  OSCBundle,
+  OSCBundleElement,
   OSCChar,
   OSCColor,
   OSCDouble,
   OSCFloat,
   OSCInfinity,
   OSCInt,
+  OSCMessage,
   OSCMIDI,
   OSCNull,
   OSCString,
@@ -21,6 +24,19 @@ import {
   OSCType,
 } from './types';
 import { OSCColorValue, OSCMIDIValue } from './values';
+
+function toNTPTime(value: Date | string | number): bigint {
+  const ts = typeof value === 'object' ? value.getTime() : typeof value === 'string' ? Date.parse(value) : value;
+  const seconds = BigInt(Math.trunc(ts / 1000));
+  const ms = BigInt(ts % 1000) + 1n;
+  return ((seconds + 2208988800n) << 32n) | (ms * (1n << 32n) / 1000n);
+}
+
+function fromNTPTime(t: bigint): Date {
+  const seconds = ((t >> 32n) & 0xffffffffn) - 2208988800n;
+  const frac = ((t & 0xffffffffn) * 1000n) / (1n << 32n);
+  return new Date(Number(seconds) * 1000 + Number(frac));
+}
 
 export type OSCRestType = `...${OSCType}`;
 export type OSCOptionalType = `${OSCType}?`;
@@ -122,6 +138,28 @@ function composeArgs(...pairs: any[]): OSCArgument[] {
   return args;
 }
 
+function composeMessage<T0 extends S>(address: string, t0: T0, v0: V<T0>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S, T2 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>, t2: T2, v2: V<T2>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S, T2 extends S, T3 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>, t2: T2, v2: V<T2>, t3: T3, v3: V<T3>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S, T2 extends S, T3 extends S, T4 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>, t2: T2, v2: V<T2>, t3: T3, v3: V<T3>, t4: T4, v4: V<T4>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S, T2 extends S, T3 extends S, T4 extends S, T5 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>, t2: T2, v2: V<T2>, t3: T3, v3: V<T3>, t4: T4, v4: V<T4>, t5: T5, v5: V<T5>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S, T2 extends S, T3 extends S, T4 extends S, T5 extends S, T6 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>, t2: T2, v2: V<T2>, t3: T3, v3: V<T3>, t4: T4, v4: V<T4>, t5: T5, v5: V<T5>, t6: T6, v6: V<T6>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S, T2 extends S, T3 extends S, T4 extends S, T5 extends S, T6 extends S, T7 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>, t2: T2, v2: V<T2>, t3: T3, v3: V<T3>, t4: T4, v4: V<T4>, t5: T5, v5: V<T5>, t6: T6, v6: V<T6>, t7: T7, v7: V<T7>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S, T2 extends S, T3 extends S, T4 extends S, T5 extends S, T6 extends S, T7 extends S, T8 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>, t2: T2, v2: V<T2>, t3: T3, v3: V<T3>, t4: T4, v4: V<T4>, t5: T5, v5: V<T5>, t6: T6, v6: V<T6>, t7: T7, v7: V<T7>, t8: T8, v8: V<T8>): OSCMessage;
+function composeMessage<T0 extends S, T1 extends S, T2 extends S, T3 extends S, T4 extends S, T5 extends S, T6 extends S, T7 extends S, T8 extends S, T9 extends S>(address: string, t0: T0, v0: V<T0>, t1: T1, v1: V<T1>, t2: T2, v2: V<T2>, t3: T3, v3: V<T3>, t4: T4, v4: V<T4>, t5: T5, v5: V<T5>, t6: T6, v6: V<T6>, t7: T7, v7: V<T7>, t8: T8, v8: V<T8>, t9: T9, v9: V<T9>): OSCMessage;
+function composeMessage(address: string, ...pairs: any[]): OSCMessage {
+  return { address, args: composeArgs(...pairs as Parameters<typeof composeArgs>) };
+}
+
+function composeBundle(...elements: OSCBundleElement[]): OSCBundle;
+function composeBundle(timetag: Date | string | number | bigint, ...elements: OSCBundleElement[]): OSCBundle;
+function composeBundle(a0: Date | string | number | bigint | OSCBundleElement, ...elems: OSCBundleElement[]): OSCBundle {
+  const [timetag, elements] = typeof a0 === 'bigint' ? [a0, elems]
+    : typeof a0 === 'object' && !(a0 instanceof Date) ? [toNTPTime(Date.now()), [a0, ...elems]]
+    : [toNTPTime(a0), elems];
+  return { elements, timetag };
+}
 
 const factories = {
   int: (value: number): OSCInt => ({ type: 'i', value }),
@@ -129,7 +167,10 @@ const factories = {
   string: (value: string): OSCString => ({ type: 's', value }),
   blob: (value: BufferInterface): OSCBlob => ({ type: 'b', value }),
   bigint: (value: bigint): OSCBigInt => ({ type: 'h', value }),
-  timetag: (value: bigint): OSCTimeTag => ({ type: 't', value }),
+  timetag: (value: Date | string | number | bigint): OSCTimeTag => ({
+    type: 't',
+    value: typeof value === 'bigint' ? value : toNTPTime(value),
+  }),
   double: (value: number): OSCDouble => ({ type: 'd', value }),
   symbol: (value: string): OSCSymbol => ({ type: 'S', value }),
   char: (value: string): OSCChar => ({ type: 'c', value }),
@@ -156,9 +197,12 @@ const factories = {
 
 
 export const osc = {
+  message: composeMessage,
+  bundle: composeBundle,
   compose: composeArgs,
   validate: validateArgs,
   extract: extractArgs,
+  timetagToDate: (arg: OSCTimeTag | bigint) => fromNTPTime(typeof arg === 'object' ? arg.value : arg),
   ...factories,
   optional: {
     int: toOptional(factories.int),
