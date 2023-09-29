@@ -89,6 +89,10 @@ function validateArgs<T extends [...OSCTypeSpec[]]>(args?: OSCArgument[], ...typ
         ++i;
       } else if (optional) {
         extracted.push(undefined);
+
+        if (isOSCType(args[i], 'N')) {
+          ++i;
+        }
       } else {
         return [] as OSCArgs<T>;
       }
