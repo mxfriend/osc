@@ -100,6 +100,10 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
     return tmp;
   }
 
+  static isBuffer(o: any): o is BufferInterface {
+    return typeof o === 'object' && o !== null && o instanceof BufferPolyfill;
+  }
+
   constructor(size: number);
   constructor(elements: Iterable<number>);
   constructor(buffer: ArrayBuffer, byteOffset?: number, length?: number);

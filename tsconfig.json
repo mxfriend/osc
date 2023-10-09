@@ -1,13 +1,11 @@
 {
-  "extends": "@tsconfig/node16",
+  "extends": "@tsconfig/node18",
   "compilerOptions": {
     "target": "ES2020",
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "types": ["node", "jest"],
     "lib": ["DOM"],
     "declaration": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "noImplicitAny": true,

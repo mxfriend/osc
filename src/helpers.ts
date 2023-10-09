@@ -1,5 +1,7 @@
-import { BufferInterface } from './buffer';
+import { $Buffer, BufferInterface } from './buffer';
+import { ArgMap, TypeMap, TypeTag } from './typeMap';
 import {
+  isAnyOSCType,
   isOSCType,
   OSCArgument,
   OSCArgumentOfType,
@@ -38,25 +40,34 @@ function fromNTPTime(t: bigint): Date {
   return new Date(Number(seconds) * 1000 + Number(frac));
 }
 
-export type OSCRestType = `...${OSCType}`;
-export type OSCOptionalType = `${OSCType}?`;
-export type OSCTypeSpec = OSCType | OSCOptionalType | OSCRestType;
+type RestType = `...${TypeTag}`;
+type OptionalType = `${TypeTag | RestType}?`;
+
+export type OSCTypeSpec = TypeTag | RestType | OptionalType;
+
+type MaybeRestArg<T extends TypeTag | RestType> =
+  T extends `...${infer P extends TypeTag}` ? ArgMap[P][] : T extends TypeTag ? ArgMap[T] : never;
 
 export type OSCArg<T extends OSCTypeSpec> =
-  T extends `...${infer P extends OSCType}` ? OSCArgumentOfType<P>[]
-    : T extends `${infer P extends OSCType}?` ? OSCArgumentOfType<P> | undefined
-      : T extends OSCType ? OSCArgumentOfType<T>
-        : never;
+  T extends `${infer P extends TypeTag | RestType}?`
+    ? MaybeRestArg<P> | undefined
+    : T extends TypeTag | RestType
+      ? MaybeRestArg<T>
+      : never;
 
 export type OSCArgs<Types extends [...OSCTypeSpec[]]> =
   | { [T in keyof Types]: OSCArg<Types[T]> }
   | { [T in keyof Types]: undefined };
 
+type MaybeRestValue<T extends TypeTag | RestType> =
+  T extends `...${infer P extends TypeTag}` ? TypeMap[P][] : T extends TypeTag ? TypeMap[T] : never;
+
 export type OSCValue<T extends OSCTypeSpec> =
-  T extends `...${infer P extends OSCType}` ? OSCArgumentOfType<P>['value'][]
-    : T extends `${infer P extends OSCType}?` ? OSCArgumentOfType<P>['value'] | undefined
-      : T extends OSCType ? OSCArgumentOfType<T>['value']
-        : never;
+  T extends `${infer P extends TypeTag | RestType}?`
+    ? MaybeRestValue<P> | undefined
+    : T extends TypeTag | RestType
+      ? MaybeRestValue<T>
+      : never;
 
 export type OSCValues<Types extends [...OSCTypeSpec[]]> =
   | { [T in keyof Types]: OSCValue<Types[T]> }
@@ -72,27 +83,34 @@ function validateArgs<T extends [...OSCTypeSpec[]]>(args?: OSCArgument[], ...typ
   let i = 0;
 
   for (const spec of types) {
-    const [, rest, type, optional] = spec.match(/^(\.\.\.)?(.)(\?)?$/)!;
+    const m = spec.match(/^(\.\.\.)?(.+?)(\?)?$/);
+
+    if (!m) {
+      throw new Error(`Invalid type spec: '${spec}'`);
+    }
+
+    const [, rest, tags, optional] = m;
+    const type = tags.split('') as OSCType[];
 
     if (rest) {
       const arr: any[] = [];
 
-      while (isOSCType(args[i], type as OSCType)) {
+      while (isAnyOSCType(args[i], ...type)) {
         arr.push(args[i]);
         ++i;
       }
 
+      if (!arr.length && !optional) {
+        return [] as OSCArgs<T>;
+      }
+
       extracted.push(arr);
     } else {
-      if (isOSCType(args[i], type as OSCType)) {
+      if (isAnyOSCType(args[i], ...type)) {
         extracted.push(args[i]);
         ++i;
       } else if (optional) {
         extracted.push(undefined);
-
-        if (isOSCType(args[i], 'N')) {
-          ++i;
-        }
       } else {
         return [] as OSCArgs<T>;
       }
@@ -105,6 +123,34 @@ function validateArgs<T extends [...OSCTypeSpec[]]>(args?: OSCArgument[], ...typ
 function extractArgs<T extends [...OSCTypeSpec[]]>(args?: OSCArgument[], ...types: T): OSCValues<T> {
   return validateArgs(args, ...types)
     .map((a) => Array.isArray(a) ? a.map((v) => v.value) : a?.value) as OSCValues<T>;
+}
+
+function composeValue(types: TypeTag, value: any): OSCArgument {
+  const valueType = typeof value;
+
+  for (let i = 0; i < types.length; ++i) {
+    const type = types.charAt(i);
+
+    switch (type) {
+      case 'i': if (valueType === 'number') return { type, value }; else break;
+      case 'f': if (valueType === 'number') return { type, value }; else break;
+      case 's': if (valueType === 'string') return { type, value }; else break;
+      case 'b': if ($Buffer.isBuffer(valueType)) return { type, value }; else break;
+      case 'h': if (valueType === 'bigint') return { type, value }; else break;
+      case 't': if (valueType === 'bigint') return { type, value }; else break;
+      case 'd': if (valueType === 'number') return { type, value }; else break;
+      case 'S': if (valueType === 'string') return { type, value }; else break;
+      case 'c': if (valueType === 'string') return { type, value }; else break;
+      case 'r': if (valueType === 'object' && value !== null && value instanceof OSCColorValue) return { type, value }; else break;
+      case 'm': if (valueType === 'object' && value !== null && value instanceof OSCMIDIValue) return { type, value }; else break;
+      case 'B': if (valueType === 'boolean') return { type, value }; else break;
+      case 'I': if (value === null) return { type, value }; else break;
+      case 'N': if (valueType === 'number' && Math.abs(value) === Infinity) return { type, value }; else break;
+      case 'a': if (Array.isArray(value)) return { type, value }; else break;
+    }
+  }
+
+  throw new Error(`Invalid value, expected OSC type '${types}', got ${valueType}`);
 }
 
 type S = OSCTypeSpec;
@@ -125,17 +171,19 @@ function composeArgs(...pairs: any[]): OSCArgument[] {
 
   for (let i = 0; i < pairs.length; i += 2) {
     const spec = pairs[i];
-    const [, rest, type, optional] = spec.match(/^(\.\.\.)?(.)(\?)?$/);
+    const [, rest, types, optional] = spec.match(/^(\.\.\.)?(.+?)(\?)?$/);
     const arg = pairs[i + 1];
 
-    if (rest) {
-      arg.length && args.push(...arg.map((value: any) => ({ type, value })));
-    } else if (arg === undefined) {
+    if (arg === undefined) {
       if (!optional) {
         throw new Error(`Missing value for argument pair #${i / 2}`);
       }
+    } else if (rest) {
+      if (arg.length) {
+        args.push(...arg.map((value: any) => composeValue(types, value)));
+      }
     } else {
-      args.push({ type, value: arg });
+      args.push(composeValue(types, arg));
     }
   }
 
