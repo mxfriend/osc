@@ -256,25 +256,25 @@ export type QueryOptions<TPeer> = {
   timeout?: number;
 };
 
-async function query(port: AbstractOSCPort, address: string): Promise<OSCArgument[]>;
-async function query<TPeer>(port: AbstractOSCPort<TPeer>, options: QueryOptions<TPeer>): Promise<OSCArgument[]>;
+async function query<TPeer>(port: AbstractOSCPort<TPeer>, address: string): Promise<[args: OSCArgument[], peer?: TPeer]>;
+async function query<TPeer>(port: AbstractOSCPort<TPeer>, options: QueryOptions<TPeer>): Promise<[args: OSCArgument[], peer?: TPeer]>;
 async function query<T extends [OSCTypeSpec, ...OSCTypeSpec[]]>(port: AbstractOSCPort, address: string, ...types: T): Promise<OSCValues<T>>;
 async function query<TPeer, T extends [OSCTypeSpec, ...OSCTypeSpec[]]>(port: AbstractOSCPort<TPeer>, options: QueryOptions<TPeer>, ...types: T): Promise<OSCValues<T>>;
 async function query<TPeer, T extends [...OSCTypeSpec[]]>(
   port: AbstractOSCPort<TPeer>,
   addressOrOptions: QueryOptions<TPeer> | string,
   ...types: T
-): Promise<T extends [OSCTypeSpec, ...OSCTypeSpec[]] ? OSCValues<T> : OSCArgument[]> {
+): Promise<OSCValues<T> | [OSCArgument[], TPeer | undefined]> {
   const options = typeof addressOrOptions === 'string' ? { address: addressOrOptions } : addressOrOptions;
 
   return new Promise(async (resolve, reject) => {
     let to: NodeJS.Timeout;
     let qi: NodeJS.Timeout;
 
-    const handleMessage = (message: OSCMessage) => {
+    const handleMessage = (message: OSCMessage, peer?: TPeer) => {
       if (!types.length) {
         cleanup();
-        resolve(message.args as any);
+        resolve([message.args, peer]);
         return;
       }
 
@@ -282,7 +282,7 @@ async function query<TPeer, T extends [...OSCTypeSpec[]]>(
 
       if (result[0] !== undefined) {
         cleanup();
-        resolve(result as any);
+        resolve(result);
       }
     };
 
