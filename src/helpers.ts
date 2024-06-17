@@ -1,3 +1,4 @@
+import { AbstractOSCPort } from './abstractPort';
 import { $Buffer, BufferInterface } from './buffer';
 import { ArgMap, TypeMap, TypeTag } from './typeMap';
 import {
@@ -248,12 +249,70 @@ const factories = {
 
 
 
+export type QueryOptions<TPeer> = {
+  address: string;
+  peer?: TPeer;
+  interval?: number;
+  timeout?: number;
+};
+
+async function query(port: AbstractOSCPort, address: string): Promise<OSCArgument[]>;
+async function query<TPeer>(port: AbstractOSCPort<TPeer>, options: QueryOptions<TPeer>): Promise<OSCArgument[]>;
+async function query<T extends [OSCTypeSpec, ...OSCTypeSpec[]]>(port: AbstractOSCPort, address: string, ...types: T): Promise<OSCValues<T>>;
+async function query<TPeer, T extends [OSCTypeSpec, ...OSCTypeSpec[]]>(port: AbstractOSCPort<TPeer>, options: QueryOptions<TPeer>, ...types: T): Promise<OSCValues<T>>;
+async function query<TPeer, T extends [...OSCTypeSpec[]]>(
+  port: AbstractOSCPort<TPeer>,
+  addressOrOptions: QueryOptions<TPeer> | string,
+  ...types: T
+): Promise<T extends [OSCTypeSpec, ...OSCTypeSpec[]] ? OSCValues<T> : OSCArgument[]> {
+  const options = typeof addressOrOptions === 'string' ? { address: addressOrOptions } : addressOrOptions;
+
+  return new Promise(async (resolve, reject) => {
+    let to: NodeJS.Timeout;
+    let qi: NodeJS.Timeout;
+
+    const handleMessage = (message: OSCMessage) => {
+      if (!types.length) {
+        cleanup();
+        resolve(message.args as any);
+        return;
+      }
+
+      const result = extractArgs(message.args, ...types);
+
+      if (result[0] !== undefined) {
+        cleanup();
+        resolve(result as any);
+      }
+    };
+
+    const abort = () => {
+      cleanup();
+      reject(new Error('Timeout'));
+    };
+
+    const cleanup = () => {
+      port.unsubscribe(options.address, handleMessage);
+      to && clearTimeout(to);
+      qi && clearInterval(qi);
+    };
+
+    port.subscribe(options.address, handleMessage);
+    await port.send(options.address, undefined, options.peer);
+    qi = setInterval(async () => port.send(options.address, undefined, options.peer), options.interval ?? 500);
+    options.timeout && (to = setTimeout(abort, options.timeout));
+  });
+}
+
+
+
 export const osc = {
   message: composeMessage,
   bundle: composeBundle,
   compose: composeArgs,
   validate: validateArgs,
   extract: extractArgs,
+  query,
   timetagToDate: (arg: OSCTimeTag | bigint) => fromNTPTime(typeof arg === 'object' ? arg.value : arg),
   ...factories,
   optional: {
