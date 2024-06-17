@@ -15,6 +15,8 @@ import {
   OSCBool,
   OSCInfinity,
   OSCNull,
+  OSCArgument,
+  OSCArray,
 } from './types';
 
 export type TypeTag =
@@ -31,6 +33,7 @@ export type TypeTag =
   | 'm'
   | 'B'
   | 'I'
+  | 'a'
   | 'iN'
   | 'fN'
   | 'sN'
@@ -44,6 +47,7 @@ export type TypeTag =
   | 'mN'
   | 'BN'
   | 'IN'
+  | 'aN'
   | 'if'
   | 'is'
   | 'ib'
@@ -371,6 +375,7 @@ export interface TypeMap {
   m: OSCMIDIValue;
   B: boolean;
   I: number;
+  a: OSCArgument[];
   iN: number | null;
   fN: number | null;
   sN: string | null;
@@ -384,6 +389,7 @@ export interface TypeMap {
   mN: OSCMIDIValue | null;
   BN: boolean | null;
   IN: number | null;
+  aN: OSCArgument[] | null;
   if: number;
   is: number | string;
   ib: number | BufferInterface;
@@ -712,6 +718,7 @@ export interface ArgMap {
   m: OSCMIDI;
   B: OSCBool;
   I: OSCInfinity;
+  a: OSCArray;
   iN: OSCInt | OSCNull;
   fN: OSCFloat | OSCNull;
   sN: OSCString | OSCNull;
@@ -725,6 +732,7 @@ export interface ArgMap {
   mN: OSCMIDI | OSCNull;
   BN: OSCBool | OSCNull;
   IN: OSCInfinity | OSCNull;
+  aN: OSCArray | OSCNull;
   if: OSCInt | OSCFloat;
   is: OSCInt | OSCString;
   ib: OSCInt | OSCBlob;
