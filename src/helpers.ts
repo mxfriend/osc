@@ -136,7 +136,7 @@ function composeValue(types: TypeTag, value: any): OSCArgument {
       case 'i': if (valueType === 'number') return { type, value }; else break;
       case 'f': if (valueType === 'number') return { type, value }; else break;
       case 's': if (valueType === 'string') return { type, value }; else break;
-      case 'b': if ($Buffer.isBuffer(valueType)) return { type, value }; else break;
+      case 'b': if ($Buffer.isBuffer(value)) return { type, value }; else break;
       case 'h': if (valueType === 'bigint') return { type, value }; else break;
       case 't': if (valueType === 'bigint') return { type, value }; else break;
       case 'd': if (valueType === 'number') return { type, value }; else break;
