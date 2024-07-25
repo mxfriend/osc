@@ -102,6 +102,10 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
     return new BufferPolyfill(values);
   }
 
+  static alloc(size: number): BufferPolyfill {
+    return this.allocUnsafe(size).fill(0);
+  }
+
   static allocUnsafe(size: number): BufferPolyfill {
     return new BufferPolyfill(new ArrayBuffer(size));
   }

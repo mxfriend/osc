@@ -5,9 +5,9 @@
   "homepage": "https://github.com/mxfriend/osc",
   "repository": {
     "type": "vcs",
-    "url": "https://github.com/mxfriend/osc.git"
+    "url": "git+https://github.com/mxfriend/osc.git"
   },
-  "version": "3.0.0-alpha.0",
+  "version": "3.0.0-alpha.1",
   "author": {
     "name": "Dan Kadera",
     "email": "me@subsonic.cz",
