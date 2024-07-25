@@ -28,8 +28,8 @@ as well as all of its properties, is optional; default values and option descrip
 are shown in the following example:
 
 ```typescript
-import { OSCBundle, OSCMessage } from '@mxfriend/osc';
-import { UdpOSCPort } from '@mxfriend/osc/udp';
+import { OSCEvent } from '@mxfriend/osc';
+import { UdpOSCPort, UdpOSCPeer } from '@mxfriend/osc/udp';
 
 const conn = new UdpOSCPort({
   localAddress: '0.0.0.0',  // the local IP the UDP socket should bind to; the default means all
@@ -41,35 +41,54 @@ const conn = new UdpOSCPort({
 
 // Binds the UDP port & sets up internal event listeners.
 await conn.open();
+```
 
-// Subscribe to all incoming OSC messages:
-conn.on('message', (message: OSCMessage) => {
-  console.log(message.address, message.args);
+### Receiving OSC messages
+
+The library allows you to subscribe to all messages and / or bundles received
+by a given port like this:
+
+```typescript
+conn.on(OSCEvent.Message, (evt: OSCEvent.Message) => {
+  console.log(
+    evt.message, // an OSCMessage object
+    evt.peer, // transport-specific value representing the remote peer
+  );
 });
 
 // Subscribe to incoming OSC bundles; if this event isn't handled
 // explicitly, the OSC port will iterate over the bundle elements
 // recursively and emit a `message` event for each `OSCMessage`
 // the bundle contains:
-conn.on('bundle', (bundle: OSCBundle) => {
-  console.log(bundle.timetag, bundle.elements);
+conn.on(OSCEvent.Bundle, (evt: OSCEvent.Bundle) => {
+  console.log(
+    evt.bundle, // an OSCBundle object
+    evt.peer, // transport-specific value representing the remote peer
+  );
 });
+```
 
-// As an alternative you can subscribe directly to addresses
-// or address patterns, if you know them in advance. The decoder
-// will then only decode the address part of the message, and
-// if the address doesn't match any of the subscribed patterns,
-// the message will be discarded without decoding the rest of its
-// contents.
-//
-// Note that if you do this, bundle events will never be emitted,
-// as bundles will only be scanned for subscribed messages, never
-// fully decoded. Message events will also only be fired for messages
-// which match at least one of the subscribed patterns.
-conn.subscribe('/some/address/pattern/*', (message: OSCMessage) => {
-  console.log(message.address.startsWith('/some/address/pattern/') === true);
+As an alternative you can subscribe directly to OSC addresses,
+if you know them in advance. The decoder will then only decode
+the address part of each received message, and if the address
+doesn't match any of the subscribed addresses, the message will
+be discarded without decoding the rest of its contents.
+
+> Note that if you do this, bundle events will never be emitted,
+> as bundles will only be scanned for subscribed messages, never
+> fully decoded. Message events will also only be fired for messages
+> which match at least one of the subscribed addresses.
+
+```typescript
+conn.subscribe('/some/osc/address', (message: OSCMessage, peer?: UdpOSCPeer) => {
+  console.log(message.address); // '/some/osc/address'
 });
+```
 
+You can take this one step further and only subscribe to messages which
+match not only the address part, but the OSC argument types as well.
+
+```typescript
 // Send OSC messages:
 await conn.send('/foo/bar', [
   { type: 'i', value: 123 },

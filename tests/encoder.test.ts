@@ -1,20 +1,25 @@
+import { strict as assert } from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { OSCEncoder } from '../src';
 import { bundles, messages } from './messages';
 
-test('encodeMessage()', () => {
-  const encoder = new OSCEncoder();
+describe('OSC Encoder', () => {
+  it('encodeMessage()', () => {
+    const encoder = new OSCEncoder();
 
-  for (const [packet, message] of messages) {
-    const encoded = encoder.encodeMessage(message.address, message.args);
-    expect(encoded.equals(packet)).toBe(true);
-  }
-});
+    for (const [packet, message] of messages) {
+      const encoded = encoder.encodeMessage(message.address, message.types, message.values);
+      assert.ok(encoded.equals(packet));
+    }
+  });
 
-test('encodeBundle()', () => {
-  const encoder = new OSCEncoder();
+  it('encodeBundle()', () => {
+    const encoder = new OSCEncoder();
 
-  for (const [packet, bundle] of bundles) {
-    const encoded = encoder.encodeBundle(bundle.elements, bundle.timetag);
-    expect(encoded.equals(packet)).toBe(true);
-  }
+    for (const [packet, bundle] of bundles) {
+      const encoded = encoder.encodeBundle(bundle.elements, bundle.timetag);
+      assert.ok(encoded.equals(packet));
+    }
+  });
 });

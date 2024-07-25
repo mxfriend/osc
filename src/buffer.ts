@@ -38,9 +38,28 @@ export interface BufferInterface extends Uint8Array {
 }
 
 const hexMap = new Map<string, number>([
-  ['0', 0], ['1', 1], ['2', 2], ['3', 3], ['4', 4], ['5', 5], ['6', 6], ['7', 7], ['8', 8], ['9', 9],
-  ['a', 10], ['b', 11], ['c', 12], ['d', 13], ['e', 14], ['f', 15],
-  ['A', 10], ['B', 11], ['C', 12], ['D', 13], ['E', 14], ['F', 15],
+  ['0', 0],
+  ['1', 1],
+  ['2', 2],
+  ['3', 3],
+  ['4', 4],
+  ['5', 5],
+  ['6', 6],
+  ['7', 7],
+  ['8', 8],
+  ['9', 9],
+  ['a', 10],
+  ['b', 11],
+  ['c', 12],
+  ['d', 13],
+  ['e', 14],
+  ['f', 15],
+  ['A', 10],
+  ['B', 11],
+  ['C', 12],
+  ['D', 13],
+  ['E', 14],
+  ['F', 15],
 ]);
 
 let textDecoder: TextDecoder;
@@ -113,7 +132,11 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
   }
 
   subarray(start?: number, end?: number): BufferPolyfill {
-    return new BufferPolyfill(this.buffer, start, start !== undefined && end !== undefined ? end - start : undefined);
+    return new BufferPolyfill(
+      this.buffer,
+      start,
+      start !== undefined && end !== undefined ? end - start : undefined,
+    );
   }
 
   equals(other: BufferInterface): boolean {
@@ -144,9 +167,11 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
   readBigInt64BE(offset: number): bigint {
     return this.view.getBigInt64(offset);
   }
-  toString(encoding?: 'ascii'): string {
+  toString(): string {
     textDecoder ??= new TextDecoder('ascii');
-    return textDecoder.decode(this.buffer.slice(this.byteOffset, this.byteOffset + this.byteLength));
+    return textDecoder.decode(
+      this.buffer.slice(this.byteOffset, this.byteOffset + this.byteLength),
+    );
   }
 
   writeUint8(value: number, offset = 0): number {
@@ -185,9 +210,12 @@ export class BufferPolyfill extends Uint8Array implements BufferInterface {
   write(value: string, encoding?: 'ascii'): number;
   write(value: string, offset: number, encoding?: 'ascii'): number;
   write(value: string, offset: number, length: number, encoding?: 'ascii'): number;
-  write(value: string, a?: any, b?: any, c?: any): number {
+  write(value: string, a?: any, b?: any): number {
     const offset = typeof a === 'number' ? a : 0;
-    const length = Math.min(this.view.byteLength - offset, typeof b === 'number' ? b : value.length);
+    const length = Math.min(
+      this.view.byteLength - offset,
+      typeof b === 'number' ? b : value.length,
+    );
 
     for (let i = 0; i < length; ++i) {
       this.view.setUint8(offset + i, value.charCodeAt(i));

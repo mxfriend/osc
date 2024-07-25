@@ -20,8 +20,18 @@ export class OSCColorValue {
     }
   }
 
+  isSameAs(other: OSCColorValue): boolean {
+    return this.r === other.r && this.g === other.g && this.b === other.b && this.a === other.a;
+  }
+
   valueOf(): number {
-    return ((this.r & 0xff) << 24 | (this.g & 0xff) << 16 | (this.b & 0xff) << 8 | (this.a & 0xff)) >>> 0;
+    return (
+      (((this.r & 0xff) << 24) |
+        ((this.g & 0xff) << 16) |
+        ((this.b & 0xff) << 8) |
+        (this.a & 0xff)) >>>
+      0
+    );
   }
 }
 
@@ -47,7 +57,22 @@ export class OSCMIDIValue {
     }
   }
 
+  isSameAs(other: OSCMIDIValue): boolean {
+    return (
+      this.port === other.port &&
+      this.status === other.status &&
+      this.data1 === other.data1 &&
+      this.data2 === other.data2
+    );
+  }
+
   valueOf(): number {
-    return ((this.port & 0xff) << 24 | (this.status & 0xff) << 16 | (this.data1 & 0xff) << 8 | (this.data2 & 0xff)) >>> 0;
+    return (
+      (((this.port & 0xff) << 24) |
+        ((this.status & 0xff) << 16) |
+        ((this.data1 & 0xff) << 8) |
+        (this.data2 & 0xff)) >>>
+      0
+    );
   }
 }

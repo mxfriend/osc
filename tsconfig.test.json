@@ -1,6 +1,9 @@
 {
   "extends": "./tsconfig.json",
+  "ts-node": {
+    "files": true
+  },
   "include": [
-    "tests/**/*.ts"
+    "tests/*.test.ts"
   ]
 }

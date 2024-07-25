@@ -1,15 +1,22 @@
+import { strict as assert } from 'node:assert';
+import { describe, it } from 'node:test';
+
 import { BufferPolyfill } from '../src';
-import './test-helpers';
 
-test('can be created from raw string', () => {
-  expect(BufferPolyfill.from('abcd 1234 !#$')).toEqualCustom(Buffer.from('abcd 1234 !#$'));
-});
+describe('Buffer polyfill', () => {
+  it('can be created from raw string', () => {
+    const value = BufferPolyfill.from('abcd 1234 !#$');
+    assert.ok(Buffer.from('abcd 1234 !#$').equals(value));
+  });
 
-test('can be created from hex string', () => {
-  expect(BufferPolyfill.from('badaff0909', 'hex')).toEqualCustom(Buffer.from('badaff0909', 'hex'));
-});
+  it('can be created from hex string', () => {
+    const value = BufferPolyfill.from('badaff0909', 'hex');
+    assert.ok(Buffer.from('badaff0909', 'hex').equals(value));
+  });
 
-test('can be created from ArrayBuffer', () => {
-  const src = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-  expect(BufferPolyfill.from(src.buffer)).toEqualCustom(src);
+  it('can be created from ArrayBuffer', () => {
+    const src = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    const value = BufferPolyfill.from(src.buffer);
+    assert.ok(Buffer.from(src).equals(value));
+  });
 });

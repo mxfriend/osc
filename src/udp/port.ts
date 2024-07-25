@@ -1,5 +1,9 @@
-import { Socket, RemoteInfo, createSocket } from 'dgram';
-import { AbstractOSCPort, CommonOSCEvents } from './abstractPort';
+import type { Event } from '@mxfriend/events';
+import type { RemoteInfo, Socket } from 'dgram';
+import { createSocket } from 'dgram';
+
+import { AbstractOSCPort } from '../abstractPort';
+import { UdpOSCEvent } from './events';
 
 export type UdpOSCPortOptions = {
   localAddress?: string;
@@ -14,13 +18,10 @@ export type UdpOSCPeer = {
   port: number;
 };
 
-interface UdpOSCEvents extends CommonOSCEvents<UdpOSCPeer> {
-  error: [error: any];
-}
-
-export class UdpOSCPort<
-  TEvents extends UdpOSCEvents = UdpOSCEvents,
-> extends AbstractOSCPort<UdpOSCPeer, TEvents> {
+export class UdpOSCPort<TEvents extends Event = never> extends AbstractOSCPort<
+  UdpOSCPeer,
+  UdpOSCEvent.Error | TEvents
+> {
   private readonly options: UdpOSCPortOptions;
   private readonly sock: Socket;
   private opened: boolean;
@@ -53,7 +54,7 @@ export class UdpOSCPort<
       this.sock.setBroadcast(true);
     }
 
-    this.sock.on('error', (err) => this.emit('error', err));
+    this.sock.on('error', (err) => this.emit(new UdpOSCEvent.Error(err)));
     this.sock.on('message', this.handlePacket);
   }
 
@@ -66,8 +67,19 @@ export class UdpOSCPort<
     }
 
     await new Promise<void>((resolve) => {
-      this.sock.close(resolve)
+      this.sock.close(resolve);
     });
+  }
+
+  isPeer(value?: unknown): value is UdpOSCPeer {
+    return (
+      !!value &&
+      typeof value === 'object' &&
+      'ip' in value &&
+      typeof value.ip === 'string' &&
+      'port' in value &&
+      typeof value.port === 'number'
+    );
   }
 
   protected async sendPacket(packet: Buffer, to?: UdpOSCPeer): Promise<void> {
@@ -76,14 +88,19 @@ export class UdpOSCPort<
     }
 
     await new Promise<void>((resolve, reject) => {
-      this.sock.send(packet, to?.port ?? this.options.remotePort, to?.ip ?? this.options.remoteAddress, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    })
+      this.sock.send(
+        packet,
+        to?.port ?? this.options.remotePort,
+        to?.ip ?? this.options.remoteAddress,
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        },
+      );
+    });
   }
 
   private handlePacket(packet: Buffer, info: RemoteInfo): void {

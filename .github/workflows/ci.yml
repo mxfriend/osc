@@ -14,9 +14,8 @@ jobs:
         uses: actions/checkout@master
       - name: Install dependencies
         run: npm ci
-# Sorry, but fuck tests until they fix their compatibility shit, I don't have time for this..
-#      - name: Run tests
-#        run: make tests
+      - name: Run tests
+        run: make tests
       - name: Build package
         run: make
       - name: Publish package to NPM

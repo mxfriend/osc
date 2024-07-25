@@ -1,14 +1,14 @@
+import type { Event } from '@mxfriend/events';
 import { WebSocket } from 'ws';
-import { AbstractOSCPort, CommonOSCEvents } from './abstractPort';
-import { BufferInterface } from './buffer';
 
-export interface WsOSCEvents extends CommonOSCEvents<WebSocket> {
-  close: [client: WebSocket];
-}
+import { AbstractOSCPort } from '../abstractPort';
+import type { BufferInterface } from '../buffer';
+import { WsOSCEvent } from './events';
 
-export class WsOSCPort<
-  TEvents extends WsOSCEvents = WsOSCEvents,
-> extends AbstractOSCPort<WebSocket, TEvents> {
+export class WsOSCPort<TEvents extends Event = never> extends AbstractOSCPort<
+  WebSocket,
+  WsOSCEvent.Close | TEvents
+> {
   private readonly clients: Set<WebSocket> = new Set();
 
   add(client: WebSocket): void {
@@ -34,15 +34,24 @@ export class WsOSCPort<
       this.clients.delete(client);
       client.removeAllListeners();
       clearInterval(ping);
-      this.emit('close', client);
+      this.emit(new WsOSCEvent.Close(client));
     });
+  }
+
+  isPeer(value?: unknown): value is WebSocket {
+    return !!value && value instanceof WebSocket;
   }
 
   protected async sendPacket(packet: BufferInterface, to: WebSocket | undefined): Promise<void> {
     const recipients = to ? [to] : [...this.clients];
 
-    await Promise.all(recipients.map((sock) => new Promise<void>((resolve, reject) => {
-      sock.send(packet, (err) => err ? reject(err) : resolve());
-    })));
+    await Promise.all(
+      recipients.map(
+        (sock) =>
+          new Promise<void>((resolve, reject) => {
+            sock.send(packet, (err) => (err ? reject(err) : resolve()));
+          }),
+      ),
+    );
   }
 }
