@@ -7,7 +7,7 @@
     "type": "vcs",
     "url": "git+https://github.com/mxfriend/osc.git"
   },
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "author": {
     "name": "Dan Kadera",
     "email": "me@subsonic.cz",
@@ -25,19 +25,19 @@
       "default": "./cjs/index.js"
     },
     "./udp": {
-      "types": "./types/udpPort.d.ts",
-      "import": "./esm/udpPort.mjs",
-      "node": "./cjs/udpPort.js"
+      "types": "./types/udp/index.d.ts",
+      "import": "./esm/udp.mjs",
+      "default": "./cjs/udp/index.js"
     },
     "./websocket": {
-      "types": "./types/websocketPort.d.ts",
-      "import": "./esm/websocketPort.mjs",
-      "default": "./cjs/websocketPort.js"
+      "types": "./types/websocket/index.d.ts",
+      "import": "./esm/websocket.mjs",
+      "default": "./cjs/websocket/index.js"
     },
     "./ws": {
-      "types": "./types/wsPort.d.ts",
-      "import": "./esm/wsPort.mjs",
-      "node": "./cjs/wsPort.js"
+      "types": "./types/ws/index.d.ts",
+      "import": "./esm/ws.mjs",
+      "default": "./cjs/ws/index.js"
     }
   },
   "files": [
